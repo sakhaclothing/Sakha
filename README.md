@@ -24,8 +24,20 @@ The first thing to do is prepare a Mongo database using this template:
 
    ```json
    {
-     "token":"v4.public.asoiduasoijfiun98erjg98egjpoikr",
-     "phonenumber":"6281111222333"
+      "token": "v4.public.asdasfafdfsdfsdf",
+      "phonenumber": "62881022526506",
+      "secret": "secretkamuyangpanjangdanrumit089u08j32",
+      "url": "https://asia-southeast2-awangga.cloudfunctions.net/logiccoffee/webhook/nomor/62881022526506",
+      "urlapitext": "https://api.wa.my.id/api/v2/send/message/text",
+      "urlapiimage": "https://api.wa.my.id/api/send/message/image",
+      "urlapidoc": "https://api.wa.my.id/api/send/message/document",
+      "urlqrlogin": "https://api.wa.my.id/api/whatsauth/request",
+      "qrkeyword": "wh4t5auth0",
+      "publickey": "0d6171e848ee9efe0eca37a10813d12ecc9930d6f9b11d7ea594cac48648f022",
+      "botname": "lofe",
+      "triggerword": "lofe",
+      "telegramtoken": "",
+      "telegramname": ""
    }
    ```
 
