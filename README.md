@@ -94,7 +94,7 @@ To get an auth in Google Cloud, you can do the following:
    WEBHOOKSECRET=yoursecret
    WAPHONENUMBER=62811111
    ```
-7. Rename gcf.yml into main.yml to activate Github Action
+7. Edit function name in main.yml (optional).
 
 ## WhatsAuth Signup
 
