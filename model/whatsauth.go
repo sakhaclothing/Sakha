@@ -24,11 +24,6 @@ type IteungMessage struct {
 	LiveLoc            bool    `json:"liveloc,omitempty" bson:"liveloc,omitempty"`
 }
 
-type Profile struct {
-	Token       string `bson:"token"`
-	Phonenumber string `bson:"phonenumber"`
-}
-
 type WebHook struct {
 	URL    string `bson:"url" json:"url"`
 	Secret string `bson:"secret" json:"secret"`
@@ -50,11 +45,6 @@ type TextMessage struct {
 	To       string `json:"to"`
 	IsGroup  bool   `json:"isgroup,omitempty"`
 	Messages string `json:"messages"`
-}
-
-type Response struct {
-	Response string `json:"response"`
-	Info     string `json:"info,omitempty"`
 }
 
 type WhatsauthRequest struct {
