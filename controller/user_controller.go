@@ -7,7 +7,6 @@ import (
 
 	"github.com/WeChat-Easy-Chat/config"
 	"github.com/WeChat-Easy-Chat/model"
-	"github.com/WeChat-Easy-Chat/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
