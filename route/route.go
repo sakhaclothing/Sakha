@@ -32,6 +32,8 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Post("/auth/:action", controller.AuthHandler)
 	app.Use("/ws", middlewares.Protected())
 	app.Get("/ws", websocket.New(controller.WebSocketHandler()))
+	app.Get("/users", middlewares.Protected(), controller.GetAllUsers)
+
 
 	adaptor.FiberApp(app).ServeHTTP(w, r)
 }
@@ -41,5 +43,6 @@ func SetupRoutes(app *fiber.App) {
 
 	app.Use("/ws", middlewares.Protected())
 	app.Get("/ws", websocket.New(controller.WebSocketHandler()))
+	app.Get("/users", middlewares.Protected(), controller.GetAllUsers)
 }
 
