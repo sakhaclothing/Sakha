@@ -1,21 +1,39 @@
 package route
 
 import (
-	"net/http"
-
+	"github.com/WeChat-Easy-Chat/config"
 	"github.com/WeChat-Easy-Chat/controller"
 	"github.com/WeChat-Easy-Chat/middlewares"
-	"github.com/WeChat-Easy-Chat/config"
 
+	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"net/http"
 )
 
 func URL(w http.ResponseWriter, r *http.Request) {
-	if config.SetAccessControlHeaders(w, r) {
-		return // If it's a preflight request, return early.
-	}
-	config.SetEnv()
+	app := fiber.New()
+
+	// koneksi DB
+	config.ConnectDB()
+
+	// CORS middleware jika perlu
+	app.Use(func(c *fiber.Ctx) error {
+		c.Set("Access-Control-Allow-Origin", "*")
+		c.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+		c.Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
+		if c.Method() == "OPTIONS" {
+			return c.SendStatus(http.StatusOK)
+		}
+		return c.Next()
+	})
+
+	// routes
+	app.Post("/auth/:action", controller.AuthHandler)
+	app.Use("/ws", middlewares.Protected())
+	app.Get("/ws", websocket.New(controller.WebSocketHandler()))
+
+	adaptor.HTTPHandlerFunc(app.Handler())(w, r)
 }
 
 func SetupRoutes(app *fiber.App) {

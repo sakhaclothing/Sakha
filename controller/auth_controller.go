@@ -19,6 +19,10 @@ func AuthHandler(c *fiber.Ctx) error {
 
 	switch action {
 	case "register":
+		exists := config.DB.Collection("users").FindOne(context.Background(), bson.M{"username": input.Username})
+		if exists.Err() == nil {
+			return c.Status(409).JSON(fiber.Map{"error": "Username sudah digunakan"})
+		}
 		input.Password = utils.HashPassword(input.Password)
 		_, err := config.DB.Collection("users").InsertOne(context.Background(), input)
 		if err != nil {
@@ -35,7 +39,7 @@ func AuthHandler(c *fiber.Ctx) error {
 		if !utils.CheckPasswordHash(input.Password, user.Password) {
 			return c.Status(401).JSON(fiber.Map{"error": "Password salah"})
 		}
-		token := utils.GenerateJWT(user.ID, user.Username)
+		token := utils.GenerateJWT(user.ID.Hex(), user.Username)
 		return c.JSON(fiber.Map{"token": token})
 
 	default:
