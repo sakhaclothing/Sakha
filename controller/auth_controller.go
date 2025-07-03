@@ -23,8 +23,12 @@ func AuthHandler(c *fiber.Ctx) error {
 		if exists.Err() == nil {
 			return c.Status(409).JSON(fiber.Map{"error": "Username sudah digunakan"})
 		}
-		input.Password = utils.HashPassword(input.Password)
-		_, err := config.DB.Collection("users").InsertOne(context.Background(), input)
+		hashed, err := utils.HashPassword(input.Password)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal hash password"})
+		}
+		input.Password = hashed
+		_, err = config.DB.Collection("users").InsertOne(context.Background(), input)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Gagal register"})
 		}
@@ -39,7 +43,11 @@ func AuthHandler(c *fiber.Ctx) error {
 		if !utils.CheckPasswordHash(input.Password, user.Password) {
 			return c.Status(401).JSON(fiber.Map{"error": "Password salah"})
 		}
-		token := utils.GenerateJWT(user.ID.Hex(), user.Username)
+		token, err := utils.GenerateJWT(user.ID.Hex(), user.Username)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal membuat token"})
+		}
+
 		return c.JSON(fiber.Map{"token": token})
 
 	default:
