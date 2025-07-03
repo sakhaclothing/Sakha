@@ -1,11 +1,11 @@
-package gocroot
+package wechat
 
 import (
-	"github.com/gocroot/route"
+	"github.com/WeChat-Easy-Chat/route"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 )
 
 func init() {
-	functions.HTTP("WebHook", route.URL)
+	functions.HTTP("wechat", route.URL)
 }

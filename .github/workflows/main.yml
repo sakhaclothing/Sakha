@@ -29,12 +29,12 @@ jobs:
           gcloud functions deploy gocroot \
             --region=asia-southeast2 \
             --allow-unauthenticated \
-            --entry-point=WebHook \
+            --entry-point=wechat \
             --gen2 \
             --runtime=go122 \
             --trigger-http \
             --timeout=540s \
-            --set-env-vars MONGOSTRING='${{ secrets.MONGOSTRING }}',PHONENUMBER='${{ secrets.PHONENUMBER }}'
+            --set-env-vars MONGOSTRING='${{ secrets.MONGOSTRING }}'
       - name: 'Cek eksistensi fungsi'
         run: 'gcloud functions describe gocroot --region=asia-southeast2'
       - name: 'Cek log debugging'

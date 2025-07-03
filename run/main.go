@@ -1,12 +1,19 @@
 package main
 
 import (
-	"net/http"
+	"log"
+	"github.com/WeChat-Easy-Chat/config"
+	"github.com/WeChat-Easy-Chat/route"
 
-	"github.com/gocroot/route"
+	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
-	http.HandleFunc("/", route.URL)
-	http.ListenAndServe(":8080", nil)
+	app := fiber.New()
+
+	config.ConnectDB()
+	route.SetupRoutes(app)
+
+	log.Println("Server berjalan di :8080")
+	log.Fatal(app.Listen(":8080"))
 }
