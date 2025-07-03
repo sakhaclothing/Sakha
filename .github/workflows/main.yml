@@ -35,7 +35,7 @@ jobs:
             --runtime=go122 \
             --trigger-http \
             --timeout=540s \
-            --set-env-vars MONGOSTRING='${{ secrets.MONGOSTRING }}'
+            --set-env-vars MONGOSTRING='${{ secrets.MONGOSTRING }}',JWT_SECRET='${{ secrets.JWT_SECRET }}
       - name: 'Cek eksistensi fungsi'
         run: 'gcloud functions describe wechat --region=asia-southeast2'
       - name: 'Cek log debugging'
