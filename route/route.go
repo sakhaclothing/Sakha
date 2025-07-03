@@ -33,7 +33,7 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Use("/ws", middlewares.Protected())
 	app.Get("/ws", websocket.New(controller.WebSocketHandler()))
 
-	adaptor.HTTPHandlerFunc(app.Handler())(w, r)
+	adaptor.FiberApp(app).ServeHTTP(w, r)
 }
 
 func SetupRoutes(app *fiber.App) {
