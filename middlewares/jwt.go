@@ -11,7 +11,7 @@ func Protected() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		tokenString := c.Get("Authorization")
 		if tokenString == "" {
-			return c.Status(401).JSON(fiber.Map{"error": "Token hilang"})
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
 		}
 		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
