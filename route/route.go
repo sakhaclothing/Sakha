@@ -33,6 +33,7 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Use("/ws", middlewares.Protected())
 	app.Get("/ws", websocket.New(controller.WebSocketHandler()))
 	app.Get("/users", middlewares.Protected(), controller.GetAllUsers)
+	app.Put("/user", middlewares.Protected(), controller.UpdateProfile)
 
 
 	adaptor.FiberApp(app).ServeHTTP(w, r)
@@ -44,5 +45,6 @@ func SetupRoutes(app *fiber.App) {
 	app.Use("/ws", middlewares.Protected())
 	app.Get("/ws", websocket.New(controller.WebSocketHandler()))
 	app.Get("/users", middlewares.Protected(), controller.GetAllUsers)
+	app.Put("/user", middlewares.Protected(), controller.UpdateProfile)
 }
 

@@ -7,8 +7,11 @@ import (
 
 	"github.com/WeChat-Easy-Chat/config"
 	"github.com/WeChat-Easy-Chat/model"
+	"github.com/WeChat-Easy-Chat/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetAllUsers(c *fiber.Ctx) error {
@@ -32,4 +35,41 @@ func GetAllUsers(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(users)
+}
+
+func UpdateProfile(c *fiber.Ctx) error {
+	userToken := c.Locals("user").(map[string]interface{})
+	userIDStr := userToken["user_id"].(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error": "User ID tidak valid",
+		})
+	}
+
+	var input model.User
+	if err := c.BodyParser(&input); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error": "Data tidak valid",
+		})
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"username": input.Username,
+			"email":    input.Email,
+			"fullname": input.Fullname,
+		},
+	}
+
+	_, err = config.DB.Collection("users").UpdateByID(context.Background(), userID, update)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Gagal update profil",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Profil berhasil diupdate",
+	})
 }
