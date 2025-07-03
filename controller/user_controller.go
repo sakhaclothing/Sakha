@@ -37,8 +37,21 @@ func GetAllUsers(c *fiber.Ctx) error {
 }
 
 func UpdateProfile(c *fiber.Ctx) error {
-	userToken := c.Locals("user").(map[string]interface{})
-	userIDStr := userToken["user_id"].(string)
+	rawUser := c.Locals("user")
+	userToken, ok := rawUser.(map[string]interface{})
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized atau token tidak valid",
+		})
+	}
+
+	userIDStr, ok := userToken["user_id"].(string)
+	if !ok {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error": "User ID tidak valid",
+		})
+	}
+
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
