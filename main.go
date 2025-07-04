@@ -1,5 +1,4 @@
-package wechat
-
+package sakha
 import (
 	"github.com/sakhaclothing/route"
 
