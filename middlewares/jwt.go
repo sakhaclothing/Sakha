@@ -2,22 +2,35 @@ package middlewares
 
 import (
 	"os"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 )
 
-var jwtKey = []byte(os.Getenv("JWT_SECRET"))
+func getEnv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}
 
 func Protected() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		tokenString := c.Get("Authorization")
-		if tokenString == "" || len(tokenString) < 8 || tokenString[:7] != "Bearer " {
+		jwtKey := []byte(getEnv("JWT_SECRET", "wechat_secret"))
+
+		authHeader := c.Get("Authorization")
+		if !strings.HasPrefix(authHeader, "Bearer ") {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan atau format salah"})
 		}
-		tokenString = tokenString[7:]
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+			// Validasi algoritma
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fiber.NewError(401, "Metode signing tidak valid")
+			}
 			return jwtKey, nil
 		})
 		if err != nil || !token.Valid {
@@ -29,10 +42,8 @@ func Protected() fiber.Handler {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
 
-		// Inject ke context Fiber
 		c.Locals("user_id", claims["user_id"])
 		c.Locals("username", claims["username"])
-		c.Locals("user", claims)
 
 		return c.Next()
 	}

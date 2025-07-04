@@ -37,31 +37,18 @@ func GetAllUsers(c *fiber.Ctx) error {
 }
 
 func UpdateProfile(c *fiber.Ctx) error {
-	rawUser := c.Locals("user")
-	userToken, ok := rawUser.(map[string]interface{})
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized atau token tidak valid",
-		})
-	}
-
-	userIDStr, ok := userToken["user_id"].(string)
-	if !ok {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error": "User ID tidak valid",
-		})
-	}
+	userIDStr := c.Locals("user_id").(string)
 
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "User ID tidak valid",
 		})
 	}
 
 	var input model.User
 	if err := c.BodyParser(&input); err != nil {
-		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Data tidak valid",
 		})
 	}
@@ -76,7 +63,7 @@ func UpdateProfile(c *fiber.Ctx) error {
 
 	_, err = config.DB.Collection("users").UpdateByID(context.Background(), userID, update)
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Gagal update profil",
 		})
 	}
@@ -85,3 +72,4 @@ func UpdateProfile(c *fiber.Ctx) error {
 		"message": "Profil berhasil diupdate",
 	})
 }
+
