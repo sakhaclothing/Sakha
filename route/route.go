@@ -5,10 +5,11 @@ import (
 	"github.com/WeChat-Easy-Chat/controller"
 	"github.com/WeChat-Easy-Chat/middlewares"
 
+	"net/http"
+
 	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	"net/http"
 )
 
 func URL(w http.ResponseWriter, r *http.Request) {
@@ -33,8 +34,9 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Use("/ws", middlewares.Protected())
 	app.Get("/ws", websocket.New(controller.WebSocketHandler()))
 	app.Get("/users", middlewares.Protected(), controller.GetAllUsers)
-	app.Put("/user", middlewares.Protected(), controller.UpdateProfile)
-
+	app.Put("/user/:id", middlewares.Protected(), controller.UpdateProfileByID)
+	app.Get("/user/:id", middlewares.Protected(), controller.GetProfile)
+	app.Get("/debug/token", middlewares.Protected(), controller.DebugToken)
 
 	adaptor.FiberApp(app).ServeHTTP(w, r)
 }
@@ -45,6 +47,7 @@ func SetupRoutes(app *fiber.App) {
 	app.Use("/ws", middlewares.Protected())
 	app.Get("/ws", websocket.New(controller.WebSocketHandler()))
 	app.Get("/users", middlewares.Protected(), controller.GetAllUsers)
-	app.Put("/user", middlewares.Protected(), controller.UpdateProfile)
+	app.Put("/user/:id", middlewares.Protected(), controller.UpdateProfileByID)
+	app.Get("/user/:id", middlewares.Protected(), controller.GetProfile)
+	app.Get("/debug/token", middlewares.Protected(), controller.DebugToken)
 }
-

@@ -42,8 +42,19 @@ func Protected() fiber.Handler {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
 
-		c.Locals("user_id", claims["user_id"])
-		c.Locals("username", claims["username"])
+		// Pastikan user_id dan username dalam format string
+		userID, ok := claims["user_id"].(string)
+		if !ok {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid - user_id tidak ditemukan"})
+		}
+
+		username, ok := claims["username"].(string)
+		if !ok {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid - username tidak ditemukan"})
+		}
+
+		c.Locals("user_id", userID)
+		c.Locals("username", username)
 
 		return c.Next()
 	}
