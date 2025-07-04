@@ -30,7 +30,7 @@ jobs:
           gcloud functions deploy wechat \
             --region=asia-southeast2 \
             --allow-unauthenticated \
-            --entry-point=wechat \
+            --entry-point=sakha \
             --gen2 \
             --runtime=go122 \
             --trigger-http \

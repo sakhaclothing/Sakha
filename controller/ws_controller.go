@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/WeChat-Easy-Chat/sockets"
+	"github.com/sakhaclothing/sockets"
 	"github.com/gofiber/websocket/v2"
 )
 

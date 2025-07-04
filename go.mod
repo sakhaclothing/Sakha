@@ -1,4 +1,4 @@
-module github.com/WeChat-Easy-Chat
+module github.com/sakhaclothing
 
 go 1.22.5
 

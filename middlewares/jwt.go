@@ -17,7 +17,7 @@ func getEnv(key, fallback string) string {
 
 func Protected() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		jwtKey := []byte(getEnv("JWT_SECRET", "wechat_secret"))
+		jwtKey := []byte(getEnv("JWT_SECRET", "sakha_secret"))
 
 		authHeader := c.Get("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {

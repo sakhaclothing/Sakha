@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	"github.com/WeChat-Easy-Chat/config"
-	"github.com/WeChat-Easy-Chat/route"
+	"github.com/sakhaclothing/config"
+	"github.com/sakhaclothing/route"
 
 	"github.com/gofiber/fiber/v2"
 )

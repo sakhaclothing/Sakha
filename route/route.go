@@ -1,9 +1,9 @@
 package route
 
 import (
-	"github.com/WeChat-Easy-Chat/config"
-	"github.com/WeChat-Easy-Chat/controller"
-	"github.com/WeChat-Easy-Chat/middlewares"
+	"github.com/sakhaclothing/config"
+	"github.com/sakhaclothing/controller"
+	"github.com/sakhaclothing/middlewares"
 
 	"net/http"
 

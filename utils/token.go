@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtKey = []byte(getEnv("JWT_SECRET", "wechat_secret"))
+var jwtKey = []byte(getEnv("JWT_SECRET", "sakha_secret"))
 
 // Get env with fallback
 func getEnv(key, fallback string) string {

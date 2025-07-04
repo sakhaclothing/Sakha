@@ -2,9 +2,9 @@ package controller
 
 import (
 	"context"
-	"github.com/WeChat-Easy-Chat/config"
-	"github.com/WeChat-Easy-Chat/model"
-	"github.com/WeChat-Easy-Chat/utils"
+	"github.com/sakhaclothing/config"
+	"github.com/sakhaclothing/model"
+	"github.com/sakhaclothing/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
