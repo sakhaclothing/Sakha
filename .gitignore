@@ -21,3 +21,5 @@
 go.work
 
 .env
+test_auth.sh
+test.auth.go
