@@ -32,6 +32,7 @@ func Protected() fiber.Handler {
 		// Inject ke context Fiber
 		c.Locals("user_id", claims["user_id"])
 		c.Locals("username", claims["username"])
+		c.Locals("user", claims)
 
 		return c.Next()
 	}
