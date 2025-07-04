@@ -37,7 +37,7 @@ func ConnectDB() {
 		log.Fatalf("Gagal konek ke MongoDB: %v", err)
 	}
 
-	DB = client.Database("wechat")
+	DB = client.Database("sakha")
 	log.Println("✅ Terhubung ke MongoDB")
 }
 
