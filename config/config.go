@@ -38,7 +38,33 @@ func ConnectDB() {
 	}
 
 	DB = client.Database("sakha")
+
+	// Buat unique index untuk username
+	CreateUniqueIndexes()
+
 	log.Println("✅ Terhubung ke MongoDB")
+}
+
+// CreateUniqueIndexes membuat index unik untuk username
+func CreateUniqueIndexes() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Buat unique index untuk username
+	usernameIndexModel := mongo.IndexModel{
+		Keys: map[string]interface{}{
+			"username": 1,
+		},
+		Options: options.Index().SetUnique(true).SetName("username_unique"),
+	}
+
+	_, err := DB.Collection("users").Indexes().CreateOne(ctx, usernameIndexModel)
+	if err != nil {
+		log.Printf("⚠️  Gagal membuat unique index untuk username: %v", err)
+		log.Println("   (Ini normal jika index sudah ada)")
+	} else {
+		log.Println("✅ Unique index untuk username berhasil dibuat")
+	}
 }
 
 func SetEnv() {

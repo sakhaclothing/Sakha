@@ -21,5 +21,9 @@
 go.work
 
 .env
-test_auth.sh
-test.auth.go
+
+# Test files
+tests/test_username_uniqueness.go
+
+# Documentation files
+docs/USERNAME_UNIQUENESS.md
