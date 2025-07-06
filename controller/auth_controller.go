@@ -7,6 +7,7 @@ import (
 	"github.com/sakhaclothing/config"
 	"github.com/sakhaclothing/model"
 	"github.com/sakhaclothing/utils"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -169,28 +170,37 @@ func AuthHandler(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
-
-		// Extract user ID from claims
+	
+		// Ambil user_id dari claims JWT
 		userId, ok := claims["user_id"].(string)
 		if !ok {
-			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 		}
-
-		// Cari user di database
+	
+		// Convert userId string ke ObjectID
+		objID, err := primitive.ObjectIDFromHex(userId)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "User ID tidak valid"})
+		}
+	
+		// Cari user di database berdasarkan _id
 		var user model.User
 		err = config.DB.Collection("users").FindOne(context.Background(), bson.M{
-			"_id": userId,
+			"_id": objID,
 		}).Decode(&user)
 		if err != nil {
-			return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
+			if err == mongo.ErrNoDocuments {
+				return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
+			}
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mencari user"})
 		}
-
+	
+		// Return data user (tanpa password)
 		return c.JSON(fiber.Map{
-			"id":       user.ID,
+			"id":       user.ID.Hex(), // kirim sebagai string
 			"username": user.Username,
 			"email":    user.Email,
 			"fullname": user.Fullname,
-			// tambahkan field lain jika perlu
 		})
 
 	default:
