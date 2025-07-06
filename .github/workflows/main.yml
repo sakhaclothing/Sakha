@@ -40,5 +40,3 @@ jobs:
         run: 'gcloud functions describe sakha --region=asia-southeast2'
       - name: 'Cek log debugging'
         run: 'gcloud functions logs read sakha --region=asia-southeast2'
-      - name: 'Cleaning Artifact Registry'
-        run: 'gcloud artifacts repositories delete gcf-artifacts --location=asia-southeast2 --quiet'
