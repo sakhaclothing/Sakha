@@ -28,7 +28,6 @@ func URL(w http.ResponseWriter, r *http.Request) {
 
 	// routes
 	app.Post("/auth/:action", controller.AuthHandler)
-
 	adaptor.FiberApp(app).ServeHTTP(w, r)
 }
 

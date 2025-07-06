@@ -158,7 +158,35 @@ func AuthHandler(c *fiber.Ctx) error {
 				"fullname": user.Fullname,
 			},
 		})
-
+	case "profile":
+		// Ambil token dari header Authorization
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
+		}
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		userId, username, err := utils.ParseJWT(tokenStr)
+		if err != nil {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
+		}
+	
+		// Cari user di database
+		var user model.User
+		err = config.DB.Collection("users").FindOne(context.Background(), bson.M{
+			"_id": userId,
+		}).Decode(&user)
+		if err != nil {
+			return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
+		}
+	
+		return c.JSON(fiber.Map{
+			"id":       user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+			"fullname": user.Fullname,
+			// tambahkan field lain jika perlu
+		})
+	
 	default:
 		return c.Status(400).JSON(fiber.Map{"error": "Action tidak dikenali"})
 	}
