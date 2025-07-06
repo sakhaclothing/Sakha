@@ -165,11 +165,17 @@ func AuthHandler(c *fiber.Ctx) error {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
 		}
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		userId, username, err := utils.ParseJWT(tokenStr)
+		_, claims, err := utils.ValidateToken(tokenStr)
 		if err != nil {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
-	
+
+		// Extract user ID from claims
+		userId, ok := claims["user_id"].(string)
+		if !ok {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
+		}
+
 		// Cari user di database
 		var user model.User
 		err = config.DB.Collection("users").FindOne(context.Background(), bson.M{
@@ -178,7 +184,7 @@ func AuthHandler(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
 		}
-	
+
 		return c.JSON(fiber.Map{
 			"id":       user.ID,
 			"username": user.Username,
@@ -186,7 +192,7 @@ func AuthHandler(c *fiber.Ctx) error {
 			"fullname": user.Fullname,
 			// tambahkan field lain jika perlu
 		})
-	
+
 	default:
 		return c.Status(400).JSON(fiber.Map{"error": "Action tidak dikenali"})
 	}
