@@ -2,7 +2,9 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/sakhaclothing/config"
 	"github.com/sakhaclothing/model"
@@ -61,6 +63,161 @@ func AuthHandler(c *fiber.Ctx) error {
 			"username": user.Username,
 			"email":    user.Email,
 			"fullname": user.Fullname,
+		})
+
+	case "forgot-password":
+		// Handle forgot password request
+		var input model.ForgotPasswordRequest
+		if err := c.BodyParser(&input); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Data tidak valid"})
+		}
+
+		// Validasi email
+		if input.Email == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "Email tidak boleh kosong"})
+		}
+
+		// Cek apakah email ada di database
+		var user model.User
+		err := config.DB.Collection("users").FindOne(context.Background(), bson.M{
+			"email": bson.M{"$regex": "^" + input.Email + "$", "$options": "i"},
+		}).Decode(&user)
+
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				// Untuk keamanan, jangan beri tahu bahwa email tidak ada
+				return c.JSON(fiber.Map{
+					"message": "Jika email terdaftar, link reset password akan dikirim",
+				})
+			}
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal memeriksa email"})
+		}
+
+		// Generate reset token
+		token, expiresAt, err := utils.GenerateResetTokenWithExpiry()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal membuat token reset"})
+		}
+
+		// Invalidate any existing reset tokens for this email
+		_, err = config.DB.Collection("password_resets").UpdateMany(
+			context.Background(),
+			bson.M{"email": input.Email},
+			bson.M{"$set": bson.M{"used": true}},
+		)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal invalidate token lama"})
+		}
+
+		// Simpan token reset baru
+		resetToken := model.PasswordReset{
+			Email:     input.Email,
+			Token:     token,
+			ExpiresAt: expiresAt,
+			Used:      false,
+			CreatedAt: time.Now(),
+		}
+
+		_, err = config.DB.Collection("password_resets").InsertOne(context.Background(), resetToken)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal menyimpan token reset"})
+		}
+
+		// Kirim email dengan link reset password
+		resetLink := "https://asia-southeast2-ornate-course-437014-u9.cloudfunctions.net/sakha/reset-password?token=" + token
+
+		// Send email (will use mock email if SMTP not configured)
+		err = utils.SendPasswordResetEmail(input.Email, token, resetLink)
+		if err != nil {
+			// Log error but don't fail the request
+			fmt.Printf("Error sending email: %v\n", err)
+		}
+
+		return c.JSON(fiber.Map{
+			"message":    "Link reset password telah dikirim ke email Anda",
+			"reset_link": resetLink, // Hapus ini di production
+		})
+
+	case "reset-password":
+		// Handle reset password request
+		var input model.ResetPasswordRequest
+		if err := c.BodyParser(&input); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Data tidak valid"})
+		}
+
+		// Validasi input
+		if input.Token == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "Token tidak boleh kosong"})
+		}
+		if input.Password == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "Password tidak boleh kosong"})
+		}
+
+		// Validasi panjang password
+		if len(input.Password) < 6 {
+			return c.Status(400).JSON(fiber.Map{"error": "Password minimal 6 karakter"})
+		}
+
+		// Cari token reset di database
+		var resetToken model.PasswordReset
+		err := config.DB.Collection("password_resets").FindOne(context.Background(), bson.M{
+			"token": input.Token,
+			"used":  false,
+		}).Decode(&resetToken)
+
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return c.Status(400).JSON(fiber.Map{"error": "Token reset tidak valid atau sudah digunakan"})
+			}
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal memeriksa token"})
+		}
+
+		// Cek apakah token sudah expired
+		if utils.IsTokenExpired(resetToken.ExpiresAt) {
+			return c.Status(400).JSON(fiber.Map{"error": "Token reset sudah expired"})
+		}
+
+		// Cari user berdasarkan email
+		var user model.User
+		err = config.DB.Collection("users").FindOne(context.Background(), bson.M{
+			"email": resetToken.Email,
+		}).Decode(&user)
+
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
+			}
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mencari user"})
+		}
+
+		// Hash password baru
+		hashedPassword, err := utils.HashPassword(input.Password)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal hash password"})
+		}
+
+		// Update password user
+		_, err = config.DB.Collection("users").UpdateOne(
+			context.Background(),
+			bson.M{"_id": user.ID},
+			bson.M{"$set": bson.M{"password": hashedPassword}},
+		)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal update password"})
+		}
+
+		// Mark token sebagai used
+		_, err = config.DB.Collection("password_resets").UpdateOne(
+			context.Background(),
+			bson.M{"_id": resetToken.ID},
+			bson.M{"$set": bson.M{"used": true}},
+		)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mark token sebagai used"})
+		}
+
+		return c.JSON(fiber.Map{
+			"message": "Password berhasil direset",
 		})
 
 	case "register", "check-username", "login":

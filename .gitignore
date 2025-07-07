@@ -22,8 +22,8 @@ go.work
 
 .env
 
-# Test files
-tests/test_username_uniqueness.go
+# Test files - ignore all files in tests directory
+tests/
 
-# Documentation files
-docs/USERNAME_UNIQUENESS.md
+# Documentation files - ignore all files in docs directory
+docs/

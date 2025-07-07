@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"os"
 	"time"
 
@@ -53,4 +55,30 @@ func ValidateToken(tokenStr string) (*jwt.Token, jwt.MapClaims, error) {
 		return nil, nil, jwt.ErrInvalidKey
 	}
 	return token, claims, nil
+}
+
+// GenerateResetToken generates a random token for password reset
+func GenerateResetToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+// GenerateResetTokenWithExpiry generates a reset token with expiry time
+func GenerateResetTokenWithExpiry() (string, time.Time, error) {
+	token, err := GenerateResetToken()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	
+	// Token expires in 1 hour
+	expiresAt := time.Now().Add(1 * time.Hour)
+	return token, expiresAt, nil
+}
+
+// IsTokenExpired checks if a token has expired
+func IsTokenExpired(expiresAt time.Time) bool {
+	return time.Now().After(expiresAt)
 }
