@@ -22,11 +22,17 @@ func URL(w http.ResponseWriter, r *http.Request) {
 
 	// Minimal CORS - only for preflight
 	app.Use(func(c *fiber.Ctx) error {
+		origin := c.Get("Origin")
+		allowedOrigin := "https://sakhaclothing.shop"
+		if origin == allowedOrigin {
+			c.Set("Access-Control-Allow-Origin", allowedOrigin)
+			c.Set("Vary", "Origin")
+		}
 		if c.Method() == "OPTIONS" {
-			c.Set("Access-Control-Allow-Origin", "*")
-			c.Set("Access-Control-Allow-Methods", "POST")
-			c.Set("Access-Control-Allow-Headers", "Content-Type")
-			return c.SendStatus(http.StatusNoContent)
+			c.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+			c.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			c.Set("Access-Control-Allow-Credentials", "true")
+			return c.SendStatus(204)
 		}
 		return c.Next()
 	})
