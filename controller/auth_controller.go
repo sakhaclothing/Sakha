@@ -77,6 +77,9 @@ func AuthHandler(c *fiber.Ctx) error {
 			return c.Status(400).JSON(fiber.Map{"error": "Email tidak boleh kosong"})
 		}
 
+		// Log the request for debugging
+		fmt.Printf("Forgot password request for email: %s\n", input.Email)
+
 		// Cek apakah email ada di database
 		var user model.User
 		err := config.DB.Collection("users").FindOne(context.Background(), bson.M{
@@ -86,16 +89,21 @@ func AuthHandler(c *fiber.Ctx) error {
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				// Untuk keamanan, jangan beri tahu bahwa email tidak ada
+				fmt.Printf("Email not found: %s\n", input.Email)
 				return c.JSON(fiber.Map{
 					"message": "Jika email terdaftar, link reset password akan dikirim",
 				})
 			}
+			fmt.Printf("Database error: %v\n", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Gagal memeriksa email"})
 		}
+
+		fmt.Printf("User found: %s\n", user.Username)
 
 		// Generate reset token
 		token, expiresAt, err := utils.GenerateResetTokenWithExpiry()
 		if err != nil {
+			fmt.Printf("Token generation error: %v\n", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Gagal membuat token reset"})
 		}
 
@@ -106,6 +114,7 @@ func AuthHandler(c *fiber.Ctx) error {
 			bson.M{"$set": bson.M{"used": true}},
 		)
 		if err != nil {
+			fmt.Printf("Token invalidation error: %v\n", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Gagal invalidate token lama"})
 		}
 
@@ -120,6 +129,7 @@ func AuthHandler(c *fiber.Ctx) error {
 
 		_, err = config.DB.Collection("password_resets").InsertOne(context.Background(), resetToken)
 		if err != nil {
+			fmt.Printf("Token save error: %v\n", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Gagal menyimpan token reset"})
 		}
 
@@ -133,9 +143,10 @@ func AuthHandler(c *fiber.Ctx) error {
 			fmt.Printf("Error sending email: %v\n", err)
 		}
 
+		fmt.Printf("Password reset email sent successfully to: %s\n", input.Email)
+
 		return c.JSON(fiber.Map{
-			"message":    "Link reset password telah dikirim ke email Anda",
-			"reset_link": resetLink, // Hapus ini di production
+			"message": "Link reset password telah dikirim ke email Anda",
 		})
 
 	case "reset-password":
