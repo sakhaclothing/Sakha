@@ -108,9 +108,9 @@ func AuthHandler(c *fiber.Ctx) error {
 			return c.Status(500).SendString("Save error")
 		}
 
-		// Send email
-		resetLink := "https://asia-southeast2-ornate-course-437014-u9.cloudfunctions.net/sakha/reset-password?token=" + token
-		utils.SendPasswordResetEmail(input.Email, token, resetLink)
+		// Kirim link ke frontend, bukan ke endpoint API backend
+		resetLink := "https://sakhaclothing.shop/reset-password/?token=" + token
+		_ = utils.SendPasswordResetEmail(input.Email, token, resetLink)
 
 		return c.SendString("Email sent")
 
