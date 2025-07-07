@@ -354,6 +354,27 @@ func AuthHandler(c *fiber.Ctx) error {
 			})
 		}
 
+	case "check-email":
+		var input struct {
+			Email string `json:"email"`
+		}
+		if err := c.BodyParser(&input); err != nil {
+			return c.Status(400).JSON(fiber.Map{"valid": false, "error": "Data tidak valid"})
+		}
+		if input.Email == "" {
+			return c.Status(400).JSON(fiber.Map{"valid": false, "error": "Email wajib diisi"})
+		}
+		var user model.User
+		err := config.DB.Collection("users").FindOne(context.Background(), bson.M{
+			"email": bson.M{"$regex": "^" + input.Email + "$", "$options": "i"},
+		}).Decode(&user)
+		if err == mongo.ErrNoDocuments {
+			return c.JSON(fiber.Map{"valid": false, "error": "Email tidak terdaftar"})
+		} else if err != nil {
+			return c.Status(500).JSON(fiber.Map{"valid": false, "error": "Gagal cek email"})
+		}
+		return c.JSON(fiber.Map{"valid": true})
+
 	default:
 		return c.Status(400).JSON(fiber.Map{"error": "Action tidak dikenali"})
 	}
