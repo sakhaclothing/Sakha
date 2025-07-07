@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/smtp"
+
+	"github.com/sakhaclothing/config"
 )
 
 // EmailConfig holds email configuration
@@ -30,40 +32,58 @@ func GetEmailConfig() EmailConfig {
 
 // SendPasswordResetEmail sends a password reset email
 func SendPasswordResetEmail(toEmail, resetToken, resetLink string) error {
-	config := GetEmailConfig()
+	emailConfig := config.GetEmailConfig()
 
-	// If SMTP credentials are not configured, use mock email
-	if config.SMTPUsername == "" || config.SMTPPassword == "" {
+	// Check if SMTP is configured
+	if emailConfig.SMTPUsername == "" || emailConfig.SMTPPassword == "" {
+		// Fallback to mock email if SMTP not configured
 		return SendMockPasswordResetEmail(toEmail, resetToken, resetLink)
 	}
 
 	subject := "Reset Password - Sakha Clothing"
 	body := fmt.Sprintf(`
 		<html>
-		<body>
-			<h2>Reset Password</h2>
-			<p>Anda telah meminta untuk mereset password akun Anda.</p>
-			<p>Klik link di bawah ini untuk mereset password:</p>
-			<p><a href="%s">Reset Password</a></p>
-			<p>Atau copy paste link berikut ke browser:</p>
-			<p>%s</p>
-			<p>Link ini akan expired dalam 1 jam.</p>
-			<p>Jika Anda tidak meminta reset password, abaikan email ini.</p>
-			<br>
-			<p>Best regards,<br>Sakha Clothing Team</p>
+		<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+			<div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px;">
+				<h2 style="color: #333; text-align: center; margin-bottom: 30px;">Reset Password</h2>
+				
+				<p style="color: #666; line-height: 1.6;">Halo,</p>
+				
+				<p style="color: #666; line-height: 1.6;">Anda telah meminta untuk mereset password akun Sakha Clothing Anda.</p>
+				
+				<div style="text-align: center; margin: 30px 0;">
+					<a href="%s" style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+				</div>
+				
+				<p style="color: #666; line-height: 1.6;">Atau copy paste link berikut ke browser Anda:</p>
+				<p style="background-color: #f1f3f4; padding: 10px; border-radius: 5px; word-break: break-all; color: #333;">%s</p>
+				
+				<div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+					<p style="color: #856404; margin: 0; font-size: 14px;">
+						<strong>Penting:</strong> Link ini akan expired dalam 1 jam. Jika Anda tidak meminta reset password, abaikan email ini.
+					</p>
+				</div>
+				
+				<hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+				
+				<p style="color: #999; font-size: 12px; text-align: center;">
+					Best regards,<br>
+					<strong>Sakha Clothing Team</strong>
+				</p>
+			</div>
 		</body>
 		</html>
 	`, resetLink, resetLink)
 
-	return SendSMTPEmail(config, toEmail, subject, body)
+	return SendSMTPEmail(emailConfig, toEmail, subject, body)
 }
 
 // SendSMTPEmail sends email via SMTP
-func SendSMTPEmail(config EmailConfig, toEmail, subject, body string) error {
-	auth := smtp.PlainAuth("", config.SMTPUsername, config.SMTPPassword, config.SMTPHost)
+func SendSMTPEmail(emailConfig config.EmailConfig, toEmail, subject, body string) error {
+	auth := smtp.PlainAuth("", emailConfig.SMTPUsername, emailConfig.SMTPPassword, emailConfig.SMTPHost)
 
 	// Email headers
-	headers := fmt.Sprintf("From: %s <%s>\r\n", config.FromName, config.FromEmail)
+	headers := fmt.Sprintf("From: %s <%s>\r\n", emailConfig.FromName, emailConfig.FromEmail)
 	headers += fmt.Sprintf("To: %s\r\n", toEmail)
 	headers += fmt.Sprintf("Subject: %s\r\n", subject)
 	headers += "MIME-Version: 1.0\r\n"
@@ -74,59 +94,65 @@ func SendSMTPEmail(config EmailConfig, toEmail, subject, body string) error {
 
 	// Send email
 	err := smtp.SendMail(
-		config.SMTPHost+":"+config.SMTPPort,
+		emailConfig.SMTPHost+":"+emailConfig.SMTPPort,
 		auth,
-		config.FromEmail,
+		emailConfig.FromEmail,
 		[]string{toEmail},
 		[]byte(message),
 	)
 
-	return err
+	if err != nil {
+		fmt.Printf("SMTP Error: %v\n", err)
+		return err
+	}
+
+	fmt.Printf("Email sent successfully to: %s\n", toEmail)
+	return nil
 }
 
 // SendMockPasswordResetEmail is a mock function for development
 func SendMockPasswordResetEmail(toEmail, resetToken, resetLink string) error {
 	// In development, just log the email details
-	fmt.Printf("=== MOCK EMAIL ===\n")
+	fmt.Printf("=== MOCK EMAIL (SMTP not configured) ===\n")
 	fmt.Printf("To: %s\n", toEmail)
 	fmt.Printf("Subject: Reset Password - Sakha Clothing\n")
 	fmt.Printf("Reset Token: %s\n", resetToken)
 	fmt.Printf("Reset Link: %s\n", resetLink)
-	fmt.Printf("==================\n")
+	fmt.Printf("========================================\n")
 
 	return nil
 }
 
 // SendTLSEmail sends email with TLS (alternative method)
-func SendTLSEmail(config EmailConfig, toEmail, subject, body string) error {
+func SendTLSEmail(emailConfig config.EmailConfig, toEmail, subject, body string) error {
 	// Create TLS config
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
-		ServerName:         config.SMTPHost,
+		ServerName:         emailConfig.SMTPHost,
 	}
 
 	// Connect to SMTP server
-	conn, err := tls.Dial("tcp", config.SMTPHost+":"+config.SMTPPort, tlsConfig)
+	conn, err := tls.Dial("tcp", emailConfig.SMTPHost+":"+emailConfig.SMTPPort, tlsConfig)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
 	// Create SMTP client
-	client, err := smtp.NewClient(conn, config.SMTPHost)
+	client, err := smtp.NewClient(conn, emailConfig.SMTPHost)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
 	// Authenticate
-	auth := smtp.PlainAuth("", config.SMTPUsername, config.SMTPPassword, config.SMTPHost)
+	auth := smtp.PlainAuth("", emailConfig.SMTPUsername, emailConfig.SMTPPassword, emailConfig.SMTPHost)
 	if err = client.Auth(auth); err != nil {
 		return err
 	}
 
 	// Set sender
-	if err = client.Mail(config.FromEmail); err != nil {
+	if err = client.Mail(emailConfig.FromEmail); err != nil {
 		return err
 	}
 
@@ -142,7 +168,7 @@ func SendTLSEmail(config EmailConfig, toEmail, subject, body string) error {
 	}
 
 	// Email headers
-	headers := fmt.Sprintf("From: %s <%s>\r\n", config.FromName, config.FromEmail)
+	headers := fmt.Sprintf("From: %s <%s>\r\n", emailConfig.FromName, emailConfig.FromEmail)
 	headers += fmt.Sprintf("To: %s\r\n", toEmail)
 	headers += fmt.Sprintf("Subject: %s\r\n", subject)
 	headers += "MIME-Version: 1.0\r\n"

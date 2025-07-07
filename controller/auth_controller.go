@@ -239,6 +239,17 @@ func AuthHandler(c *fiber.Ctx) error {
 				return c.Status(500).JSON(fiber.Map{"error": "Gagal memeriksa username"})
 			}
 
+			// Cek apakah email sudah ada (case insensitive)
+			var existingEmailUser model.User
+			err = config.DB.Collection("users").FindOne(context.Background(), bson.M{
+				"email": bson.M{"$regex": "^" + input.Email + "$", "$options": "i"},
+			}).Decode(&existingEmailUser)
+			if err == nil {
+				return c.Status(409).JSON(fiber.Map{"error": "Email sudah digunakan"})
+			} else if err != mongo.ErrNoDocuments {
+				return c.Status(500).JSON(fiber.Map{"error": "Gagal memeriksa email"})
+			}
+
 			// Hash password
 			hashed, err := utils.HashPassword(input.Password)
 			if err != nil {

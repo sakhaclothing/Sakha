@@ -65,6 +65,21 @@ func CreateUniqueIndexes() {
 	} else {
 		log.Println("✅ Unique index untuk username berhasil dibuat")
 	}
+
+	// Buat unique index untuk email
+	emailIndexModel := mongo.IndexModel{
+		Keys: map[string]interface{}{
+			"email": 1,
+		},
+		Options: options.Index().SetUnique(true).SetName("email_unique"),
+	}
+	_, err = DB.Collection("users").Indexes().CreateOne(ctx, emailIndexModel)
+	if err != nil {
+		log.Printf("⚠️  Gagal membuat unique index untuk email: %v", err)
+		log.Println("   (Ini normal jika index sudah ada)")
+	} else {
+		log.Println("✅ Unique index untuk email berhasil dibuat")
+	}
 }
 
 func SetEnv() {
