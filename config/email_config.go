@@ -1,7 +1,10 @@
 package config
 
 import (
+	"context"
 	"os"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // EmailConfig holds email configuration
@@ -32,4 +35,23 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+type SMTPConfig struct {
+	SMTPHost     string `bson:"SMTP_HOST"`
+	SMTPPort     string `bson:"SMTP_PORT"`
+	SMTPUsername string `bson:"SMTP_USERNAME"`
+	SMTPPassword string `bson:"SMTP_PASSWORD"`
+	FromEmail    string `bson:"FROM_EMAIL"`
+	FromName     string `bson:"FROM_NAME"`
+}
+
+// GetSMTPConfig loads SMTP config from MongoDB collection 'configurations' with _id: 'smtp'
+func GetSMTPConfig() (*SMTPConfig, error) {
+	var cfg SMTPConfig
+	err := DB.Collection("configurations").FindOne(context.Background(), bson.M{"_id": "smtp"}).Decode(&cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &cfg, nil
 }

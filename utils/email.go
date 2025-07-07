@@ -32,11 +32,13 @@ func GetEmailConfig() EmailConfig {
 
 // SendPasswordResetEmail sends a password reset email
 func SendPasswordResetEmail(toEmail, resetToken, resetLink string) error {
-	emailConfig := config.GetEmailConfig()
+	smtpConfig, err := config.GetSMTPConfig()
+	if err != nil {
+		return fmt.Errorf("SMTP config not found: %v", err)
+	}
 
-	// Check if SMTP is configured
-	if emailConfig.SMTPUsername == "" || emailConfig.SMTPPassword == "" {
-		// Fallback to mock email if SMTP not configured
+	// If SMTP credentials are not configured, use mock email
+	if smtpConfig.SMTPUsername == "" || smtpConfig.SMTPPassword == "" {
 		return SendMockPasswordResetEmail(toEmail, resetToken, resetLink)
 	}
 
@@ -75,15 +77,15 @@ func SendPasswordResetEmail(toEmail, resetToken, resetLink string) error {
 		</html>
 	`, resetLink, resetLink)
 
-	return SendSMTPEmail(emailConfig, toEmail, subject, body)
+	return SendSMTPEmail(smtpConfig, toEmail, subject, body)
 }
 
 // SendSMTPEmail sends email via SMTP
-func SendSMTPEmail(emailConfig config.EmailConfig, toEmail, subject, body string) error {
-	auth := smtp.PlainAuth("", emailConfig.SMTPUsername, emailConfig.SMTPPassword, emailConfig.SMTPHost)
+func SendSMTPEmail(smtpConfig *config.SMTPConfig, toEmail, subject, body string) error {
+	auth := smtp.PlainAuth("", smtpConfig.SMTPUsername, smtpConfig.SMTPPassword, smtpConfig.SMTPHost)
 
 	// Email headers
-	headers := fmt.Sprintf("From: %s <%s>\r\n", emailConfig.FromName, emailConfig.FromEmail)
+	headers := fmt.Sprintf("From: %s <%s>\r\n", smtpConfig.FromName, smtpConfig.FromEmail)
 	headers += fmt.Sprintf("To: %s\r\n", toEmail)
 	headers += fmt.Sprintf("Subject: %s\r\n", subject)
 	headers += "MIME-Version: 1.0\r\n"
@@ -94,9 +96,9 @@ func SendSMTPEmail(emailConfig config.EmailConfig, toEmail, subject, body string
 
 	// Send email
 	err := smtp.SendMail(
-		emailConfig.SMTPHost+":"+emailConfig.SMTPPort,
+		smtpConfig.SMTPHost+":"+smtpConfig.SMTPPort,
 		auth,
-		emailConfig.FromEmail,
+		smtpConfig.FromEmail,
 		[]string{toEmail},
 		[]byte(message),
 	)
@@ -124,35 +126,35 @@ func SendMockPasswordResetEmail(toEmail, resetToken, resetLink string) error {
 }
 
 // SendTLSEmail sends email with TLS (alternative method)
-func SendTLSEmail(emailConfig config.EmailConfig, toEmail, subject, body string) error {
+func SendTLSEmail(smtpConfig *config.SMTPConfig, toEmail, subject, body string) error {
 	// Create TLS config
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
-		ServerName:         emailConfig.SMTPHost,
+		ServerName:         smtpConfig.SMTPHost,
 	}
 
 	// Connect to SMTP server
-	conn, err := tls.Dial("tcp", emailConfig.SMTPHost+":"+emailConfig.SMTPPort, tlsConfig)
+	conn, err := tls.Dial("tcp", smtpConfig.SMTPHost+":"+smtpConfig.SMTPPort, tlsConfig)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
 	// Create SMTP client
-	client, err := smtp.NewClient(conn, emailConfig.SMTPHost)
+	client, err := smtp.NewClient(conn, smtpConfig.SMTPHost)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
 	// Authenticate
-	auth := smtp.PlainAuth("", emailConfig.SMTPUsername, emailConfig.SMTPPassword, emailConfig.SMTPHost)
+	auth := smtp.PlainAuth("", smtpConfig.SMTPUsername, smtpConfig.SMTPPassword, smtpConfig.SMTPHost)
 	if err = client.Auth(auth); err != nil {
 		return err
 	}
 
 	// Set sender
-	if err = client.Mail(emailConfig.FromEmail); err != nil {
+	if err = client.Mail(smtpConfig.FromEmail); err != nil {
 		return err
 	}
 
@@ -168,7 +170,7 @@ func SendTLSEmail(emailConfig config.EmailConfig, toEmail, subject, body string)
 	}
 
 	// Email headers
-	headers := fmt.Sprintf("From: %s <%s>\r\n", emailConfig.FromName, emailConfig.FromEmail)
+	headers := fmt.Sprintf("From: %s <%s>\r\n", smtpConfig.FromName, smtpConfig.FromEmail)
 	headers += fmt.Sprintf("To: %s\r\n", toEmail)
 	headers += fmt.Sprintf("Subject: %s\r\n", subject)
 	headers += "MIME-Version: 1.0\r\n"

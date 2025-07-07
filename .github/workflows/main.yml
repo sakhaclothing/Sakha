@@ -35,7 +35,7 @@ jobs:
             --runtime=go122 \
             --trigger-http \
             --timeout=540s \
-            --set-env-vars "MONGOSTRING=${{ secrets.MONGOSTRING }},JWT_SECRET=${{ secrets.JWT_SECRET }}, SMTP_HOST=${{ secrets.SMTP_HOST }},SMTP_PORT=${{ secrets.SMTP_PORT }},SMTP_USERNAME=${{ secrets.SMTP_USERNAME }},SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }},FROM_EMAIL=${{ secrets.FROM_EMAIL }},FROM_NAME=${{ secrets.FROM_NAME }}"
+            --set-env-vars "MONGOSTRING=${{ secrets.MONGOSTRING }},JWT_SECRET=${{ secrets.JWT_SECRET }}"
       - name: 'Cek eksistensi fungsi'
         run: 'gcloud functions describe sakha --region=asia-southeast2'
       - name: 'Cek log debugging'
