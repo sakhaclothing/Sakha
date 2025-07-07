@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -66,21 +65,17 @@ func AuthHandler(c *fiber.Ctx) error {
 		})
 
 	case "forgot-password":
-		// Handle forgot password request
+		// Ultra-minimal forgot password handler
 		var input model.ForgotPasswordRequest
 		if err := c.BodyParser(&input); err != nil {
-			return c.Status(400).JSON(fiber.Map{"error": "Data tidak valid"})
+			return c.Status(400).SendString("Invalid data")
 		}
 
-		// Validasi email
 		if input.Email == "" {
-			return c.Status(400).JSON(fiber.Map{"error": "Email tidak boleh kosong"})
+			return c.Status(400).SendString("Email required")
 		}
 
-		// Log the request for debugging
-		fmt.Printf("Forgot password request for email: %s\n", input.Email)
-
-		// Cek apakah email ada di database
+		// Check if email exists
 		var user model.User
 		err := config.DB.Collection("users").FindOne(context.Background(), bson.M{
 			"email": bson.M{"$regex": "^" + input.Email + "$", "$options": "i"},
@@ -88,37 +83,18 @@ func AuthHandler(c *fiber.Ctx) error {
 
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				// Untuk keamanan, jangan beri tahu bahwa email tidak ada
-				fmt.Printf("Email not found: %s\n", input.Email)
-				return c.JSON(fiber.Map{
-					"message": "Jika email terdaftar, link reset password akan dikirim",
-				})
+				return c.SendString("Email sent if registered")
 			}
-			fmt.Printf("Database error: %v\n", err)
-			return c.Status(500).JSON(fiber.Map{"error": "Gagal memeriksa email"})
+			return c.Status(500).SendString("Database error")
 		}
 
-		fmt.Printf("User found: %s\n", user.Username)
-
-		// Generate reset token
+		// Generate token
 		token, expiresAt, err := utils.GenerateResetTokenWithExpiry()
 		if err != nil {
-			fmt.Printf("Token generation error: %v\n", err)
-			return c.Status(500).JSON(fiber.Map{"error": "Gagal membuat token reset"})
+			return c.Status(500).SendString("Token error")
 		}
 
-		// Invalidate any existing reset tokens for this email
-		_, err = config.DB.Collection("password_resets").UpdateMany(
-			context.Background(),
-			bson.M{"email": input.Email},
-			bson.M{"$set": bson.M{"used": true}},
-		)
-		if err != nil {
-			fmt.Printf("Token invalidation error: %v\n", err)
-			return c.Status(500).JSON(fiber.Map{"error": "Gagal invalidate token lama"})
-		}
-
-		// Simpan token reset baru
+		// Save token
 		resetToken := model.PasswordReset{
 			Email:     input.Email,
 			Token:     token,
@@ -129,25 +105,14 @@ func AuthHandler(c *fiber.Ctx) error {
 
 		_, err = config.DB.Collection("password_resets").InsertOne(context.Background(), resetToken)
 		if err != nil {
-			fmt.Printf("Token save error: %v\n", err)
-			return c.Status(500).JSON(fiber.Map{"error": "Gagal menyimpan token reset"})
+			return c.Status(500).SendString("Save error")
 		}
 
-		// Kirim email dengan link reset password
+		// Send email
 		resetLink := "https://asia-southeast2-ornate-course-437014-u9.cloudfunctions.net/sakha/reset-password?token=" + token
+		utils.SendPasswordResetEmail(input.Email, token, resetLink)
 
-		// Send email (will use mock email if SMTP not configured)
-		err = utils.SendPasswordResetEmail(input.Email, token, resetLink)
-		if err != nil {
-			// Log error but don't fail the request
-			fmt.Printf("Error sending email: %v\n", err)
-		}
-
-		fmt.Printf("Password reset email sent successfully to: %s\n", input.Email)
-
-		return c.JSON(fiber.Map{
-			"message": "Link reset password telah dikirim ke email Anda",
-		})
+		return c.SendString("Email sent")
 
 	case "reset-password":
 		// Handle reset password request
