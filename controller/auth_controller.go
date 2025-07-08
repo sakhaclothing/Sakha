@@ -291,7 +291,11 @@ func AuthHandler(c *fiber.Ctx) error {
 			// Kirim OTP ke email user
 			subject := "Verifikasi Email - Sakha Clothing"
 			body := "<p>Kode OTP verifikasi email Anda: <b>" + otp + "</b></p><p>Kode berlaku 10 menit.</p>"
-			err = utils.SendSMTPEmail(config.GetSMTPConfig(), input.Email, subject, body)
+			smtpConfig, smtpErr := config.GetSMTPConfig()
+			if smtpErr != nil {
+				return c.Status(500).JSON(fiber.Map{"error": "Gagal mengambil konfigurasi SMTP"})
+			}
+			err = utils.SendSMTPEmail(smtpConfig, input.Email, subject, body)
 			if err != nil {
 				return c.Status(500).JSON(fiber.Map{"error": "Gagal mengirim email OTP"})
 			}
