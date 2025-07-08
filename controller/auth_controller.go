@@ -345,29 +345,32 @@ func AuthHandler(c *fiber.Ctx) error {
 		case "login":
 			// Validasi input
 			if input.Username == "" {
-				return c.Status(400).JSON(fiber.Map{"error": "Username tidak boleh kosong"})
+				return c.Status(400).JSON(fiber.Map{"error": "Username atau email tidak boleh kosong"})
 			}
 			if input.Password == "" {
 				return c.Status(400).JSON(fiber.Map{"error": "Password tidak boleh kosong"})
 			}
 
-			// Normalisasi username untuk login
-			username := strings.ToLower(strings.TrimSpace(input.Username))
+			loginField := "username"
+			loginValue := strings.ToLower(strings.TrimSpace(input.Username))
+			if strings.Contains(loginValue, "@") {
+				loginField = "email"
+			}
 
 			var user model.User
 			err := config.DB.Collection("users").FindOne(context.Background(), bson.M{
-				"username": bson.M{"$regex": "^" + username + "$", "$options": "i"},
+				loginField: bson.M{"$regex": "^" + loginValue + "$", "$options": "i"},
 			}).Decode(&user)
 
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
-					return c.Status(404).JSON(fiber.Map{"error": "Username atau password salah"})
+					return c.Status(404).JSON(fiber.Map{"error": "Username/email atau password salah"})
 				}
 				return c.Status(500).JSON(fiber.Map{"error": "Gagal mencari user"})
 			}
 
 			if !utils.CheckPasswordHash(input.Password, user.Password) {
-				return c.Status(401).JSON(fiber.Map{"error": "Username atau password salah"})
+				return c.Status(401).JSON(fiber.Map{"error": "Username/email atau password salah"})
 			}
 
 			token, err := utils.GenerateJWT(user.ID.Hex(), user.Username)
