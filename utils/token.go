@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"math/big"
 	"os"
 	"time"
 
@@ -81,4 +82,18 @@ func GenerateResetTokenWithExpiry() (string, time.Time, error) {
 // IsTokenExpired checks if a token has expired
 func IsTokenExpired(expiresAt time.Time) bool {
 	return time.Now().After(expiresAt)
+}
+
+// GenerateOTP generates a 6-digit numeric OTP for email verification
+func GenerateOTP() (string, error) {
+	var digits = []byte("0123456789")
+	otp := make([]byte, 6)
+	for i := range otp {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(digits))))
+		if err != nil {
+			return "", err
+		}
+		otp[i] = digits[n.Int64()]
+	}
+	return string(otp), nil
 }

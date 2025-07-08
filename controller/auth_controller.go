@@ -257,6 +257,9 @@ func AuthHandler(c *fiber.Ctx) error {
 			}
 			input.Password = hashed
 
+			// Set user belum terverifikasi
+			input.IsVerified = false
+
 			// Insert user baru
 			result, err := config.DB.Collection("users").InsertOne(context.Background(), input)
 			if err != nil {
@@ -267,8 +270,34 @@ func AuthHandler(c *fiber.Ctx) error {
 				return c.Status(500).JSON(fiber.Map{"error": "Gagal register user"})
 			}
 
+			// Generate OTP
+			otp, err := utils.GenerateOTP()
+			if err != nil {
+				return c.Status(500).JSON(fiber.Map{"error": "Gagal generate OTP"})
+			}
+			expiresAt := time.Now().Add(10 * time.Minute)
+			verification := model.EmailVerification{
+				Email:     input.Email,
+				OTP:       otp,
+				ExpiresAt: expiresAt,
+				Used:      false,
+				CreatedAt: time.Now(),
+			}
+			_, err = config.DB.Collection("email_verifications").InsertOne(context.Background(), verification)
+			if err != nil {
+				return c.Status(500).JSON(fiber.Map{"error": "Gagal simpan OTP"})
+			}
+
+			// Kirim OTP ke email user
+			subject := "Verifikasi Email - Sakha Clothing"
+			body := "<p>Kode OTP verifikasi email Anda: <b>" + otp + "</b></p><p>Kode berlaku 10 menit.</p>"
+			err = utils.SendSMTPEmail(config.GetSMTPConfig(), input.Email, subject, body)
+			if err != nil {
+				return c.Status(500).JSON(fiber.Map{"error": "Gagal mengirim email OTP"})
+			}
+
 			return c.Status(201).JSON(fiber.Map{
-				"message": "Berhasil register",
+				"message": "Berhasil register. Silakan cek email untuk verifikasi (OTP)",
 				"user_id": result.InsertedID,
 			})
 
@@ -374,6 +403,57 @@ func AuthHandler(c *fiber.Ctx) error {
 			return c.Status(500).JSON(fiber.Map{"valid": false, "error": "Gagal cek email"})
 		}
 		return c.JSON(fiber.Map{"valid": true})
+
+	case "verify-email":
+		var input struct {
+			Email string `json:"email"`
+			OTP   string `json:"otp"`
+		}
+		if err := c.BodyParser(&input); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Data tidak valid"})
+		}
+		if input.Email == "" || input.OTP == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "Email dan OTP wajib diisi"})
+		}
+
+		// Cari OTP yang belum digunakan dan belum expired
+		var verification model.EmailVerification
+		err := config.DB.Collection("email_verifications").FindOne(context.Background(), bson.M{
+			"email": input.Email,
+			"otp":   input.OTP,
+			"used":  false,
+		}).Decode(&verification)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return c.Status(400).JSON(fiber.Map{"error": "OTP salah atau sudah digunakan"})
+			}
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal cek OTP"})
+		}
+		if utils.IsTokenExpired(verification.ExpiresAt) {
+			return c.Status(400).JSON(fiber.Map{"error": "OTP sudah expired"})
+		}
+
+		// Update user menjadi verified
+		_, err = config.DB.Collection("users").UpdateOne(
+			context.Background(),
+			bson.M{"email": input.Email},
+			bson.M{"$set": bson.M{"is_verified": true}},
+		)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal update user"})
+		}
+
+		// Mark OTP as used
+		_, err = config.DB.Collection("email_verifications").UpdateOne(
+			context.Background(),
+			bson.M{"_id": verification.ID},
+			bson.M{"$set": bson.M{"used": true}},
+		)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal update OTP"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Email berhasil diverifikasi"})
 
 	default:
 		return c.Status(400).JSON(fiber.Map{"error": "Action tidak dikenali"})
