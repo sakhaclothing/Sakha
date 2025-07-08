@@ -96,32 +96,6 @@ To get an auth in Google Cloud, you can do the following:
    ```
 7. Edit function name in main.yml (optional).
 
-## WhatsAuth Signup
-
-1. Go to the [WhatsAuth signup page](https://wa.my.id/) and scan with your WhatsApp camera menu for login.
-2. Input the webhook URL(<https://yourappname.alwaysdata.net/whatsauth/webhook>) and your secret from the WEBHOOKSECRET setting environment on Always Data.  
-   ![image](https://github.com/gocroot/alwaysdata/assets/11188109/e0b5cb9d-e9b3-4d04-bbd5-b03bd12293da)  
-3. Follow [this instruction](https://whatsauth.my.id/docs/), at the end of the instruction, you will get 30 days token using [this request](https://wa.my.id/apidocs/#/signup/signUpNewUser)
-4. Save the token into MongoDB, open iteung db, and insert this JSON document with your 30-day token and WhatsApp number.  
-   ![image](https://github.com/gocroot/alwaysdata/assets/11188109/829ae88a-be59-46f2-bddc-93482d0a4999)  
-   ```json
-   {
-     "token":"v4.public.asoiduasoijfiun98erjg98egjpoikr",
-     "phonenumber":"6281111222333"
-   }
-   ```
-   ![image](https://github.com/gocroot/alwaysdata/assets/11188109/06330754-9167-4bf4-a214-5d75dab7c60a)  
-
-## Refresh Whatsapp API Token
-
-To continue using the WhatsAuth service, we must obtain a new token every three weeks before it expires in 30 days.
-
-1. Open Menu Cloud Scheduler. You can just search it like the screenshot.  
-   ![image](https://github.com/gocroot/gcp/assets/11188109/58e3f419-123b-4a69-89d2-9a1d3adb1b76)  
-2. Click Create Job Input every 29 days; next, choose Target type HTTP, input refresh token URL from cloud function, HTTP method Get.  
-   ![image](https://github.com/gocroot/gcp/assets/11188109/a9ee6af9-f8b6-404c-8a60-4c3df63b534e)  
-   ![image](https://github.com/gocroot/gcp/assets/11188109/9b7d3f80-b264-4690-8776-9a8158a5f29c)    
-3. Completing create schedule
 
 ## Upgrade Apps
 
