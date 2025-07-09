@@ -62,6 +62,7 @@ func AuthHandler(c *fiber.Ctx) error {
 			"username": user.Username,
 			"email":    user.Email,
 			"fullname": user.Fullname,
+			"role":     user.Role,
 		})
 
 	case "forgot-password":
@@ -259,6 +260,7 @@ func AuthHandler(c *fiber.Ctx) error {
 
 			// Set user belum terverifikasi
 			input.IsVerified = false
+			input.Role = "user" // Set role default
 
 			// Insert user baru
 			result, err := config.DB.Collection("users").InsertOne(context.Background(), input)
@@ -386,6 +388,7 @@ func AuthHandler(c *fiber.Ctx) error {
 					"username": user.Username,
 					"email":    user.Email,
 					"fullname": user.Fullname,
+					"role":     user.Role,
 				},
 			})
 		}
@@ -461,6 +464,179 @@ func AuthHandler(c *fiber.Ctx) error {
 		}
 
 		return c.JSON(fiber.Map{"message": "Email berhasil diverifikasi"})
+
+	case "update-role":
+		// Ambil token dari header Authorization
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
+		}
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		_, claims, err := utils.ValidateToken(tokenStr)
+		if err != nil {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
+		}
+
+		// Ambil user_id dari claims JWT
+		userId, ok := claims["user_id"].(string)
+		if !ok {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
+		}
+
+		// Convert userId string ke ObjectID
+		objID, err := primitive.ObjectIDFromHex(userId)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "User ID tidak valid"})
+		}
+
+		// Cari user yang melakukan request
+		var adminUser model.User
+		err = config.DB.Collection("users").FindOne(context.Background(), bson.M{
+			"_id": objID,
+		}).Decode(&adminUser)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
+			}
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mencari user"})
+		}
+
+		// Cek apakah user adalah admin
+		if adminUser.Role != "admin" {
+			return c.Status(403).JSON(fiber.Map{"error": "Akses ditolak. Hanya admin yang dapat mengubah role"})
+		}
+
+		// Parse input untuk update role
+		var input struct {
+			UserID string `json:"user_id"`
+			Role   string `json:"role"`
+		}
+		if err := c.BodyParser(&input); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Data tidak valid"})
+		}
+
+		if input.UserID == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "User ID tidak boleh kosong"})
+		}
+		if input.Role == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "Role tidak boleh kosong"})
+		}
+
+		// Validasi role yang diizinkan
+		allowedRoles := []string{"user", "admin", "moderator"}
+		roleValid := false
+		for _, allowedRole := range allowedRoles {
+			if input.Role == allowedRole {
+				roleValid = true
+				break
+			}
+		}
+		if !roleValid {
+			return c.Status(400).JSON(fiber.Map{"error": "Role tidak valid. Role yang diizinkan: user, admin, moderator"})
+		}
+
+		// Convert target user ID string ke ObjectID
+		targetUserID, err := primitive.ObjectIDFromHex(input.UserID)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "User ID target tidak valid"})
+		}
+
+		// Cek apakah target user ada
+		var targetUser model.User
+		err = config.DB.Collection("users").FindOne(context.Background(), bson.M{
+			"_id": targetUserID,
+		}).Decode(&targetUser)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return c.Status(404).JSON(fiber.Map{"error": "User target tidak ditemukan"})
+			}
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mencari user target"})
+		}
+
+		// Update role user target
+		_, err = config.DB.Collection("users").UpdateOne(
+			context.Background(),
+			bson.M{"_id": targetUserID},
+			bson.M{"$set": bson.M{"role": input.Role}},
+		)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal update role user"})
+		}
+
+		return c.JSON(fiber.Map{
+			"message":  "Role user berhasil diupdate",
+			"user_id":  input.UserID,
+			"new_role": input.Role,
+		})
+
+	case "get-users":
+		// Ambil token dari header Authorization
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
+		}
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		_, claims, err := utils.ValidateToken(tokenStr)
+		if err != nil {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
+		}
+
+		// Ambil user_id dari claims JWT
+		userId, ok := claims["user_id"].(string)
+		if !ok {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
+		}
+
+		// Convert userId string ke ObjectID
+		objID, err := primitive.ObjectIDFromHex(userId)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "User ID tidak valid"})
+		}
+
+		// Cari user yang melakukan request
+		var adminUser model.User
+		err = config.DB.Collection("users").FindOne(context.Background(), bson.M{
+			"_id": objID,
+		}).Decode(&adminUser)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
+			}
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mencari user"})
+		}
+
+		// Cek apakah user adalah admin
+		if adminUser.Role != "admin" {
+			return c.Status(403).JSON(fiber.Map{"error": "Akses ditolak. Hanya admin yang dapat melihat daftar user"})
+		}
+
+		// Ambil semua user (tanpa password)
+		cursor, err := config.DB.Collection("users").Find(context.Background(), bson.M{})
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mengambil daftar user"})
+		}
+		defer cursor.Close(context.Background())
+
+		var users []fiber.Map
+		for cursor.Next(context.Background()) {
+			var user model.User
+			if err := cursor.Decode(&user); err != nil {
+				continue
+			}
+			users = append(users, fiber.Map{
+				"id":          user.ID.Hex(),
+				"username":    user.Username,
+				"email":       user.Email,
+				"fullname":    user.Fullname,
+				"role":        user.Role,
+				"is_verified": user.IsVerified,
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"users": users,
+			"total": len(users),
+		})
 
 	default:
 		return c.Status(400).JSON(fiber.Map{"error": "Action tidak dikenali"})
