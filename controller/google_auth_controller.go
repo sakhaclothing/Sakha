@@ -37,7 +37,6 @@ func GoogleLoginHandler(c *fiber.Ctx) error {
 
 	email, _ := payload.Claims["email"].(string)
 	name, _ := payload.Claims["name"].(string)
-	picture, _ := payload.Claims["picture"].(string)
 
 	// Cari user di database
 	var user model.User
