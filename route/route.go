@@ -39,6 +39,7 @@ func URL(w http.ResponseWriter, r *http.Request) {
 
 	// routes
 	app.Post("/auth/:action", controller.AuthHandler)
+	app.Post("/tracker", controller.TrackerHandler)
 
 	// Simple test endpoint
 	app.Post("/test", func(c *fiber.Ctx) error {
@@ -49,4 +50,5 @@ func URL(w http.ResponseWriter, r *http.Request) {
 
 func SetupRoutes(app *fiber.App) {
 	app.Post("/auth/:action", controller.AuthHandler)
+	app.Post("/tracker", controller.TrackerHandler)
 }
