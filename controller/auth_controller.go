@@ -638,6 +638,77 @@ func AuthHandler(c *fiber.Ctx) error {
 			"total": len(users),
 		})
 
+	case "change-password":
+		// PUT /user/password
+		// Ambil token dari header Authorization
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
+		}
+		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+		_, claims, err := utils.ValidateToken(tokenStr)
+		if err != nil {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
+		}
+
+		userId, ok := claims["user_id"].(string)
+		if !ok {
+			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
+		}
+
+		objID, err := primitive.ObjectIDFromHex(userId)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "User ID tidak valid"})
+		}
+
+		// Ambil input
+		type ChangePasswordInput struct {
+			OldPassword string `json:"old_password"`
+			NewPassword string `json:"new_password"`
+			ConfirmNewPassword string `json:"confirm_new_password"`
+		}
+		var input ChangePasswordInput
+		if err := c.BodyParser(&input); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Data tidak valid"})
+		}
+
+		if input.NewPassword != input.ConfirmNewPassword {
+			return c.Status(400).JSON(fiber.Map{"error": "Konfirmasi password baru tidak cocok"})
+		}
+		if len(input.NewPassword) < 6 {
+			return c.Status(400).JSON(fiber.Map{"error": "Password baru minimal 6 karakter"})
+		}
+
+		// Cari user di database
+		var user model.User
+		err = config.DB.Collection("users").FindOne(context.Background(), bson.M{"_id": objID}).Decode(&user)
+		if err != nil {
+			return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
+		}
+
+		// Cek password lama
+		if !utils.CheckPasswordHash(input.OldPassword, user.Password) {
+			return c.Status(400).JSON(fiber.Map{"error": "Password lama salah"})
+		}
+
+		// Hash password baru
+		hashed, err := utils.HashPassword(input.NewPassword)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal hash password baru"})
+		}
+
+		// Update password di database
+		_, err = config.DB.Collection("users").UpdateOne(
+			context.Background(),
+			bson.M{"_id": user.ID},
+			bson.M{"$set": bson.M{"password": hashed}},
+		)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal update password"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Password berhasil diganti"})
+
 	default:
 		return c.Status(400).JSON(fiber.Map{"error": "Action tidak dikenali"})
 	}
