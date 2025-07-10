@@ -29,7 +29,7 @@ func URL(w http.ResponseWriter, r *http.Request) {
 			c.Set("Vary", "Origin")
 		}
 		if c.Method() == "OPTIONS" {
-			c.Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+			c.Set("Access-Control-Allow-Methods", "POST, GET, PUT, PATCH, DELETE, OPTIONS")
 			c.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			c.Set("Access-Control-Allow-Credentials", "true")
 			return c.SendStatus(204)
