@@ -41,6 +41,7 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Post("/auth/google-login", controller.GoogleLoginHandler)
 	app.Post("/auth/:action", controller.AuthHandler)
 	app.Post("/tracker", controller.TrackerHandler)
+	app.Get("/tracker/count", controller.TrackerCountHandler)
 	app.Get("/config/google-client-id", controller.GetGoogleClientID)
 
 	// Simple test endpoint
@@ -54,5 +55,6 @@ func SetupRoutes(app *fiber.App) {
 	app.Post("/auth/google-login", controller.GoogleLoginHandler)
 	app.Post("/auth/:action", controller.AuthHandler)
 	app.Post("/tracker", controller.TrackerHandler)
+	app.Get("/tracker/count", controller.TrackerCountHandler)
 	app.Get("/config/google-client-id", controller.GetGoogleClientID)
 }
