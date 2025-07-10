@@ -43,7 +43,7 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Post("/tracker", controller.TrackerHandler)
 	app.Get("/tracker/count", controller.TrackerCountHandler)
 	app.Get("/config/google-client-id", controller.GetGoogleClientID)
-	app.Put("/user/password", controller.AuthHandler)
+	app.Put("/auth/change-password", controller.AuthHandler)
 
 	// Simple test endpoint
 	app.Post("/test", func(c *fiber.Ctx) error {
@@ -58,5 +58,5 @@ func SetupRoutes(app *fiber.App) {
 	app.Post("/tracker", controller.TrackerHandler)
 	app.Get("/tracker/count", controller.TrackerCountHandler)
 	app.Get("/config/google-client-id", controller.GetGoogleClientID)
-	app.Put("/user/password", controller.AuthHandler)
+	app.Put("/auth/change-password", controller.AuthHandler)
 }
