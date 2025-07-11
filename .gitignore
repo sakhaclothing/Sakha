@@ -24,6 +24,3 @@ go.work
 
 # Test files - ignore all files in tests directory
 tests/
-
-# Documentation files - ignore all files in docs directory
-docs/
