@@ -789,8 +789,34 @@ func UpdateProfileHandler(c *fiber.Ctx) error {
 	if input.Email != user.Email {
 		update["email"] = input.Email
 		update["is_verified"] = false
-		// TODO: generate OTP, simpan, dan kirim ke email baru
-		// ...
+		// Generate OTP
+		otp, err := utils.GenerateOTP()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal generate OTP"})
+		}
+		expiresAt := time.Now().Add(10 * time.Minute)
+		verification := model.EmailVerification{
+			Email:     input.Email,
+			OTP:       otp,
+			ExpiresAt: expiresAt,
+			Used:      false,
+			CreatedAt: time.Now(),
+		}
+		_, err = config.DB.Collection("email_verifications").InsertOne(context.Background(), verification)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal simpan OTP"})
+		}
+		// Kirim OTP ke email user
+		subject := "Verifikasi Email Baru - Sakha Clothing"
+		body := "<p>Kode OTP verifikasi email Anda: <b>" + otp + "</b></p><p>Kode berlaku 10 menit.</p>"
+		smtpConfig, smtpErr := config.GetSMTPConfig()
+		if smtpErr != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mengambil konfigurasi SMTP"})
+		}
+		err = utils.SendSMTPEmail(smtpConfig, input.Email, subject, body)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mengirim email OTP"})
+		}
 		_, err = config.DB.Collection("users").UpdateOne(
 			context.Background(),
 			bson.M{"_id": user.ID},
