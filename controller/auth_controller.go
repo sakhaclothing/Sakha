@@ -642,6 +642,10 @@ func AuthHandler(c *fiber.Ctx) error {
 		// PUT /user/password
 		return ChangePasswordHandler(c)
 
+	case "update-profile":
+		// PUT /user/profile
+		return UpdateProfileHandler(c)
+
 	default:
 		return c.Status(400).JSON(fiber.Map{"error": "Action tidak dikenali"})
 	}
@@ -737,4 +741,76 @@ func ChangePasswordHandler(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"message": "Password berhasil diganti"})
+}
+
+// UpdateProfileHandler untuk update username, fullname, email
+func UpdateProfileHandler(c *fiber.Ctx) error {
+	authHeader := c.Get("Authorization")
+	if authHeader == "" {
+		return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
+	}
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	_, claims, err := utils.ValidateToken(tokenStr)
+	if err != nil {
+		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
+	}
+	userId, ok := claims["user_id"].(string)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
+	}
+	objID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "User ID tidak valid"})
+	}
+
+	// Ambil input
+	type UpdateProfileInput struct {
+		Username string `json:"username"`
+		Fullname string `json:"fullname"`
+		Email    string `json:"email"`
+	}
+	var input UpdateProfileInput
+	if err := c.BodyParser(&input); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Data tidak valid"})
+	}
+
+	// Cek user lama
+	var user model.User
+	err = config.DB.Collection("users").FindOne(context.Background(), bson.M{"_id": objID}).Decode(&user)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
+	}
+
+	// Jika email berubah, set is_verified=false dan TODO: generate & kirim OTP
+	update := bson.M{
+		"username": input.Username,
+		"fullname": input.Fullname,
+	}
+	if input.Email != user.Email {
+		update["email"] = input.Email
+		update["is_verified"] = false
+		// TODO: generate OTP, simpan, dan kirim ke email baru
+		// ...
+		_, err = config.DB.Collection("users").UpdateOne(
+			context.Background(),
+			bson.M{"_id": user.ID},
+			bson.M{"$set": update},
+		)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal update email"})
+		}
+		return c.JSON(fiber.Map{"message": "Kode OTP dikirim ke email baru. Silakan verifikasi."})
+	}
+
+	// Update data user (tanpa ganti email)
+	_, err = config.DB.Collection("users").UpdateOne(
+		context.Background(),
+		bson.M{"_id": user.ID},
+		bson.M{"$set": update},
+	)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal update profil"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Profil berhasil diperbarui!"})
 }

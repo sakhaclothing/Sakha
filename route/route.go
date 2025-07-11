@@ -44,6 +44,7 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Get("/tracker/count", controller.TrackerCountHandler)
 	app.Get("/config/google-client-id", controller.GetGoogleClientID)
 	app.Put("/auth/change-password", controller.ChangePasswordHandler)
+	app.Put("/auth/profile", controller.UpdateProfileHandler)
 
 	// Simple test endpoint
 	app.Post("/test", func(c *fiber.Ctx) error {
