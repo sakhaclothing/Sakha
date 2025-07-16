@@ -1,6 +1,10 @@
 package utils
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+
 	"crypto/rand"
 	"encoding/hex"
 	"math/big"
@@ -143,4 +147,24 @@ func randomJTI() string {
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
 	return base64.URLEncoding.EncodeToString(b)
+}
+
+func VerifyTurnstile(token, remoteip string) bool {
+	secret := getEnv("TURNSTILE_SECRET", "0x4AAAAAABlTVmwKZ1ZPV-y736zMYZX0kUQ")
+	data := map[string]string{
+		"secret":   secret,
+		"response": token,
+		"remoteip": remoteip,
+	}
+	body, _ := json.Marshal(data)
+	resp, err := http.Post("https://challenges.cloudflare.com/turnstile/v0/siteverify", "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	var result struct {
+		Success bool `json:"success"`
+	}
+	json.NewDecoder(resp.Body).Decode(&result)
+	return result.Success
 }
