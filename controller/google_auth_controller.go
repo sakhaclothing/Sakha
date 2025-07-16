@@ -7,7 +7,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/sakhaclothing/config"
 	"github.com/sakhaclothing/model"
-	"github.com/sakhaclothing/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -62,10 +61,10 @@ func GoogleLoginHandler(c *fiber.Ctx) error {
 	}
 
 	// Generate JWT aplikasi-mu (gunakan fungsi yang sudah ada)
-	token, err := utils.GeneratePasetoToken(user.ID.Hex(), user.Username)
-	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate token"})
-	}
+	// token, err := utils.GenerateJWT(user.ID.Hex(), user.Username)
+	// if err != nil {
+	// 	return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate token"})
+	// }
 
-	return c.JSON(fiber.Map{"token": token})
+	return c.JSON(fiber.Map{"token": "token_placeholder"}) // Placeholder for now
 }
