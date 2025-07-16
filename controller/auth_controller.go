@@ -31,8 +31,8 @@ func AuthHandler(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
-		userId, ok := token.Get("user_id").(string)
-		if !ok {
+		userId := token.Get("user_id")
+		if userId == "" {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 		}
 
@@ -483,8 +483,8 @@ func AuthHandler(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
-		userId, ok := token.Get("user_id").(string)
-		if !ok {
+		userId := token.Get("user_id")
+		if userId == "" {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 		}
 
@@ -585,8 +585,8 @@ func AuthHandler(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
-		userId, ok := token.Get("user_id").(string)
-		if !ok {
+		userId := token.Get("user_id")
+		if userId == "" {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 		}
 
@@ -686,8 +686,8 @@ func ChangePasswordHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 	}
-	userId, ok := token.Get("user_id").(string)
-	if !ok {
+	userId := token.Get("user_id")
+	if userId == "" {
 		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 	}
 
@@ -756,8 +756,8 @@ func UpdateProfileHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 	}
-	userId, ok := token.Get("user_id").(string)
-	if !ok {
+	userId := token.Get("user_id")
+	if userId == "" {
 		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 	}
 	objID, err := primitive.ObjectIDFromHex(userId)
