@@ -22,6 +22,12 @@ import (
 var jwtKey = []byte(getEnv("JWT_SECRET", "sakha_secret"))
 var pasetoSecretKey = []byte(getEnv("PASETO_SECRET", "sakha_paseto_secret_32byteslong!!"))
 
+func init() {
+	if len(pasetoSecretKey) != 32 {
+		panic("PASETO_SECRET must be exactly 32 bytes (32 characters) for v2 local tokens")
+	}
+}
+
 // Get env with fallback
 func getEnv(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
@@ -123,7 +129,11 @@ func GeneratePasetoToken(id, username string) (string, error) {
 	jsonToken.Set("user_id", id)
 	jsonToken.Set("username", username)
 	footer := ""
-	return paseto.NewV2().Encrypt(pasetoSecretKey, jsonToken, footer)
+	token, err := paseto.NewV2().Encrypt(pasetoSecretKey, jsonToken, footer)
+	if err != nil {
+		fmt.Println("PASETO Encrypt error:", err)
+	}
+	return token, err
 }
 
 // ValidatePasetoToken parses and validates a PASETO token
