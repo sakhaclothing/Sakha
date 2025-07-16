@@ -118,12 +118,9 @@ func GeneratePasetoToken(id, username string) (string, error) {
 		Audience:   "sakhaclothing",
 		Issuer:     "sakhaclothing-backend",
 		Jti:        randomJTI(),
-		// Custom claims
-		Set: map[string]interface{}{
-			"user_id":  id,
-			"username": username,
-		},
 	}
+	jsonToken.Set("user_id", id)
+	jsonToken.Set("username", username)
 	footer := ""
 	return paseto.NewV2().Encrypt(pasetoSecretKey, jsonToken, footer)
 }
