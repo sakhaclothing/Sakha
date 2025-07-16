@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"crypto/rand"
@@ -156,12 +157,17 @@ func VerifyTurnstile(token, remoteip string) bool {
 	body, _ := json.Marshal(data)
 	resp, err := http.Post("https://challenges.cloudflare.com/turnstile/v0/siteverify", "application/json", bytes.NewBuffer(body))
 	if err != nil {
+		fmt.Println("Turnstile network error:", err)
 		return false
 	}
 	defer resp.Body.Close()
 	var result struct {
-		Success bool `json:"success"`
+		Success    bool     `json:"success"`
+		ErrorCodes []string `json:"error-codes"`
 	}
 	json.NewDecoder(resp.Body).Decode(&result)
+	if !result.Success {
+		fmt.Println("Turnstile failed:", result.ErrorCodes, "token:", token)
+	}
 	return result.Success
 }

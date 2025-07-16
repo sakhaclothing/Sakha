@@ -29,13 +29,13 @@ func Protected() fiber.Handler {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
 
-		userID, ok := token.Get("user_id").(string)
-		if !ok {
+		userID := token.Get("user_id")
+		if userID == "" {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid - user_id tidak ditemukan"})
 		}
 
-		username, ok := token.Get("username").(string)
-		if !ok {
+		username := token.Get("username")
+		if username == "" {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid - username tidak ditemukan"})
 		}
 
