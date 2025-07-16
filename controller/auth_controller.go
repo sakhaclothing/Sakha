@@ -202,11 +202,22 @@ func AuthHandler(c *fiber.Ctx) error {
 			return c.Status(400).JSON(fiber.Map{"error": "Data tidak valid"})
 		}
 
-		// --- Tambahkan verifikasi Turnstile di login/register ---
+		// --- Ambil token Turnstile dari JSON body atau form ---
+		var turnstileToken string
+		if strings.Contains(c.Get("Content-Type"), "application/json") {
+			var body map[string]interface{}
+			if err := c.BodyParser(&body); err == nil {
+				if v, ok := body["cf-turnstile-response"].(string); ok {
+					turnstileToken = v
+				}
+			}
+		}
+		if turnstileToken == "" {
+			turnstileToken = c.FormValue("cf-turnstile-response")
+		}
+		remoteip := c.IP()
 		if action == "register" || action == "login" || action == "reset-password" {
-			token := c.FormValue("cf-turnstile-response")
-			remoteip := c.IP()
-			if !utils.VerifyTurnstile(token, remoteip) {
+			if !utils.VerifyTurnstile(turnstileToken, remoteip) {
 				return c.Status(400).JSON(fiber.Map{"error": "Verifikasi CAPTCHA gagal"})
 			}
 		}
