@@ -19,13 +19,6 @@ import (
 )
 
 var jwtKey = []byte(getEnv("JWT_SECRET", "sakha_secret"))
-var pasetoSecretKey = []byte(getEnv("PASETO_SECRET", "sakha_paseto_secret_32byteslong!!"))
-
-func init() {
-	if len(pasetoSecretKey) != 32 {
-		panic("PASETO_SECRET must be exactly 32 bytes (32 characters) for v2 local tokens")
-	}
-}
 
 // Get env with fallback
 func getEnv(key, fallback string) string {
