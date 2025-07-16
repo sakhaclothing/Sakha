@@ -44,10 +44,10 @@ func GoogleLoginHandler(c *fiber.Ctx) error {
 	if err == mongo.ErrNoDocuments {
 		// Auto-register user baru
 		user = model.User{
-			Email:     email,
-			Fullname:  name,
-			Username:  email, // Atau generate username unik
-			Role:      "user",
+			Email:      email,
+			Fullname:   name,
+			Username:   email, // Atau generate username unik
+			Role:       "user",
 			IsVerified: true,
 		}
 		res, err := config.DB.Collection("users").InsertOne(context.Background(), user)
@@ -62,7 +62,7 @@ func GoogleLoginHandler(c *fiber.Ctx) error {
 	}
 
 	// Generate JWT aplikasi-mu (gunakan fungsi yang sudah ada)
-	token, err := utils.GenerateJWT(user.ID.Hex(), user.Username)
+	token, err := utils.GeneratePasetoToken(user.ID.Hex(), user.Username)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate token"})
 	}

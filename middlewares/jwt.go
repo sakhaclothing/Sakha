@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/sakhaclothing/utils"
 )
 
 func getEnv(key, fallback string) string {
@@ -17,8 +17,6 @@ func getEnv(key, fallback string) string {
 
 func Protected() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		jwtKey := []byte(getEnv("JWT_SECRET", "sakha_secret"))
-
 		authHeader := c.Get("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan atau format salah"})
@@ -26,29 +24,17 @@ func Protected() fiber.Handler {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-			// Validasi algoritma
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fiber.NewError(401, "Metode signing tidak valid")
-			}
-			return jwtKey, nil
-		})
-		if err != nil || !token.Valid {
+		token, err := utils.ValidatePasetoToken(tokenString)
+		if err != nil {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
 
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok {
-			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
-		}
-
-		// Pastikan user_id dan username dalam format string
-		userID, ok := claims["user_id"].(string)
+		userID, ok := token.Get("user_id").(string)
 		if !ok {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid - user_id tidak ditemukan"})
 		}
 
-		username, ok := claims["username"].(string)
+		username, ok := token.Get("username").(string)
 		if !ok {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid - username tidak ditemukan"})
 		}

@@ -27,13 +27,11 @@ func AuthHandler(c *fiber.Ctx) error {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
 		}
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		_, claims, err := utils.ValidateToken(tokenStr)
+		token, err := utils.ValidatePasetoToken(tokenStr)
 		if err != nil {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
-
-		// Ambil user_id dari claims JWT
-		userId, ok := claims["user_id"].(string)
+		userId, ok := token.Get("user_id").(string)
 		if !ok {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 		}
@@ -375,7 +373,7 @@ func AuthHandler(c *fiber.Ctx) error {
 				return c.Status(401).JSON(fiber.Map{"error": "Username/email atau password salah"})
 			}
 
-			token, err := utils.GenerateJWT(user.ID.Hex(), user.Username)
+			token, err := utils.GeneratePasetoToken(user.ID.Hex(), user.Username)
 			if err != nil {
 				return c.Status(500).JSON(fiber.Map{"error": "Gagal membuat token"})
 			}
@@ -472,13 +470,11 @@ func AuthHandler(c *fiber.Ctx) error {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
 		}
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		_, claims, err := utils.ValidateToken(tokenStr)
+		token, err := utils.ValidatePasetoToken(tokenStr)
 		if err != nil {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
-
-		// Ambil user_id dari claims JWT
-		userId, ok := claims["user_id"].(string)
+		userId, ok := token.Get("user_id").(string)
 		if !ok {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 		}
@@ -576,13 +572,11 @@ func AuthHandler(c *fiber.Ctx) error {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
 		}
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		_, claims, err := utils.ValidateToken(tokenStr)
+		token, err := utils.ValidatePasetoToken(tokenStr)
 		if err != nil {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 		}
-
-		// Ambil user_id dari claims JWT
-		userId, ok := claims["user_id"].(string)
+		userId, ok := token.Get("user_id").(string)
 		if !ok {
 			return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 		}
@@ -679,12 +673,11 @@ func ChangePasswordHandler(c *fiber.Ctx) error {
 		return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
 	}
 	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-	_, claims, err := utils.ValidateToken(tokenStr)
+	token, err := utils.ValidatePasetoToken(tokenStr)
 	if err != nil {
 		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 	}
-
-	userId, ok := claims["user_id"].(string)
+	userId, ok := token.Get("user_id").(string)
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 	}
@@ -750,11 +743,11 @@ func UpdateProfileHandler(c *fiber.Ctx) error {
 		return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
 	}
 	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-	_, claims, err := utils.ValidateToken(tokenStr)
+	token, err := utils.ValidatePasetoToken(tokenStr)
 	if err != nil {
 		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
 	}
-	userId, ok := claims["user_id"].(string)
+	userId, ok := token.Get("user_id").(string)
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid (user_id tidak ditemukan)"})
 	}

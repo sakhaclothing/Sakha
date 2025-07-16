@@ -7,11 +7,15 @@ import (
 	"os"
 	"time"
 
+	"encoding/base64"
+
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/o1egl/paseto"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var jwtKey = []byte(getEnv("JWT_SECRET", "sakha_secret"))
+var pasetoSecretKey = []byte(getEnv("PASETO_SECRET", "sakha_paseto_secret_32byteslong!!"))
 
 // Get env with fallback
 func getEnv(key, fallback string) string {
@@ -73,7 +77,7 @@ func GenerateResetTokenWithExpiry() (string, time.Time, error) {
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	
+
 	// Token expires in 1 hour
 	expiresAt := time.Now().Add(1 * time.Hour)
 	return token, expiresAt, nil
@@ -96,4 +100,47 @@ func GenerateOTP() (string, error) {
 		otp[i] = digits[n.Int64()]
 	}
 	return string(otp), nil
+}
+
+// GeneratePasetoToken creates a PASETO token for user
+func GeneratePasetoToken(id, username string) (string, error) {
+	now := time.Now()
+	exp := now.Add(24 * time.Hour)
+	jsonToken := paseto.JSONToken{
+		Expiration: exp,
+		IssuedAt:   now,
+		NotBefore:  now,
+		Subject:    id,
+		Audience:   "sakhaclothing",
+		Issuer:     "sakhaclothing-backend",
+		Jti:        randomJTI(),
+		// Custom claims
+		Set: map[string]interface{}{
+			"user_id":  id,
+			"username": username,
+		},
+	}
+	footer := ""
+	return paseto.NewV2().Encrypt(pasetoSecretKey, jsonToken, footer)
+}
+
+// ValidatePasetoToken parses and validates a PASETO token
+func ValidatePasetoToken(tokenStr string) (*paseto.JSONToken, error) {
+	var jsonToken paseto.JSONToken
+	var footer string
+	err := paseto.NewV2().Decrypt(tokenStr, pasetoSecretKey, &jsonToken, &footer)
+	if err != nil {
+		return nil, err
+	}
+	if jsonToken.Expiration.Before(time.Now()) {
+		return nil, jwt.ErrTokenExpired
+	}
+	return &jsonToken, nil
+}
+
+// randomJTI generates a random string for JTI
+func randomJTI() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
 }
