@@ -124,6 +124,14 @@ func CreateProduct(c *fiber.Ctx) error {
 	if product.Stock == 0 {
 		product.Stock = 0
 	}
+	
+	// Set default boolean values if not provided
+	if !product.IsActive {
+		product.IsActive = true
+	}
+	if !product.IsFeatured {
+		product.IsFeatured = false
+	}
 
 	collection := config.DB.Collection("products")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
