@@ -112,6 +112,33 @@ func SendSMTPEmail(smtpConfig *config.SMTPConfig, toEmail, subject, body string)
 	return nil
 }
 
+// SendEmail is a generic email sending function
+func SendEmail(toEmail, subject, body string) error {
+	smtpConfig, err := config.GetSMTPConfig()
+	if err != nil {
+		return fmt.Errorf("SMTP config not found: %v", err)
+	}
+
+	// If SMTP credentials are not configured, use mock email
+	if smtpConfig.SMTPUsername == "" || smtpConfig.SMTPPassword == "" {
+		return SendMockEmail(toEmail, subject, body)
+	}
+
+	return SendSMTPEmail(smtpConfig, toEmail, subject, body)
+}
+
+// SendMockEmail is a mock function for development
+func SendMockEmail(toEmail, subject, body string) error {
+	// In development, just log the email details
+	fmt.Printf("=== MOCK EMAIL (SMTP not configured) ===\n")
+	fmt.Printf("To: %s\n", toEmail)
+	fmt.Printf("Subject: %s\n", subject)
+	fmt.Printf("Body: %s\n", body)
+	fmt.Printf("========================================\n")
+
+	return nil
+}
+
 // SendMockPasswordResetEmail is a mock function for development
 func SendMockPasswordResetEmail(toEmail, resetToken, resetLink string) error {
 	// In development, just log the email details

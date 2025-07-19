@@ -155,7 +155,7 @@ func CreateProduct(c *fiber.Ctx) error {
 
 	// Send notification to newsletter subscribers if product is active and featured
 	if product.IsActive && product.IsFeatured {
-		go sendNewProductNotificationToSubscribers(product)
+		go utils.SendNewProductNotificationToSubscribers(product)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
