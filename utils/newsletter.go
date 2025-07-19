@@ -14,7 +14,7 @@ import (
 // SendWelcomeEmail sends welcome email to new subscriber
 func SendWelcomeEmail(email string) {
 	subject := "Welcome to Sakha Clothing Newsletter!"
-	content := fmt.Sprintf(`
+	content := `
 		<h2>Welcome to Sakha Clothing!</h2>
 		<p>Thank you for subscribing to our newsletter. You'll be the first to know about:</p>
 		<ul>
@@ -25,7 +25,7 @@ func SendWelcomeEmail(email string) {
 		</ul>
 		<p>Stay tuned for exciting updates!</p>
 		<p>Best regards,<br>The Sakha Clothing Team</p>
-	`)
+	`
 
 	err := SendEmail(email, subject, content)
 	if err != nil {
@@ -78,7 +78,7 @@ func SendNewProductNotificationToSubscribers(product model.Product) {
 		
 		<div style="border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 8px;">
 			<h3>%s</h3>
-			<p><strong>Price:</strong> Rp %,.0f</p>
+			<p><strong>Price:</strong> %s</p>
 			<p><strong>Category:</strong> %s</p>
 			<p>%s</p>
 		</div>
@@ -87,7 +87,7 @@ func SendNewProductNotificationToSubscribers(product model.Product) {
 		<p><a href="https://sakhaclothing.shop/featuredproducts" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Product</a></p>
 		
 		<p>Best regards,<br>The Sakha Clothing Team</p>
-	`, product.Name, product.Price, product.Category, product.Description)
+	`, product.Name, formatRupiah(product.Price), product.Category, product.Description)
 
 	successCount := 0
 	for _, subscriber := range subscribers {
@@ -114,4 +114,22 @@ func SendNewProductNotificationToSubscribers(product model.Product) {
 	}
 
 	fmt.Printf("Sent new product notification to %d/%d subscribers\n", successCount, len(subscribers))
-} 
+}
+
+// Helper untuk format harga Rupiah
+func formatRupiah(amount float64) string {
+	return fmt.Sprintf("Rp %s", commaSeparator(int64(amount)))
+}
+
+// Helper untuk menambahkan tanda koma pada angka
+func commaSeparator(n int64) string {
+	in := fmt.Sprintf("%d", n)
+	out := ""
+	for i, v := range in {
+		if i != 0 && (len(in)-i)%3 == 0 {
+			out += "."
+		}
+		out += string(v)
+	}
+	return out
+}
