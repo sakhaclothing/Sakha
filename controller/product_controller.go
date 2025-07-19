@@ -21,11 +21,18 @@ func GetProducts(c *fiber.Ctx) error {
 
 	// Check if we want featured products only
 	featured := c.Query("featured")
+	// Check if we want all products (for admin dashboard)
+	all := c.Query("all")
 	var filter bson.M
 
 	if featured == "true" {
+		// For featured products page - only active and featured
 		filter = bson.M{"is_featured": true, "is_active": true}
+	} else if all == "true" {
+		// For admin dashboard - show all products (active and inactive)
+		filter = bson.M{}
 	} else {
+		// Default - only active products
 		filter = bson.M{"is_active": true}
 	}
 
@@ -124,7 +131,7 @@ func CreateProduct(c *fiber.Ctx) error {
 	if product.Stock == 0 {
 		product.Stock = 0
 	}
-	
+
 	// Set default boolean values if not provided
 	if !product.IsActive {
 		product.IsActive = true

@@ -16,11 +16,13 @@ All endpoints require authentication. Include your authentication token in the r
 
 **GET** `/products`
 
-Get all active products.
+Get products based on query parameters.
 
 **Query Parameters:**
 
-- `featured` (optional): Set to `true` to get only featured products
+- `featured` (optional): Set to `true` to get only featured and active products
+- `all` (optional): Set to `true` to get all products (active and inactive) - for admin dashboard
+- If no parameters: Get only active products
 
 **Response:**
 
@@ -273,6 +275,22 @@ const response = await fetch(
 );
 const data = await response.json();
 const featuredProducts = data.data;
+```
+
+#### Load All Products (Admin Dashboard)
+
+```javascript
+const response = await fetch("https://your-backend-url.com/products?all=true");
+const data = await response.json();
+const allProducts = data.data; // Includes active and inactive products
+```
+
+#### Load Active Products Only
+
+```javascript
+const response = await fetch("https://your-backend-url.com/products");
+const data = await response.json();
+const activeProducts = data.data; // Only active products
 ```
 
 #### Create New Product
