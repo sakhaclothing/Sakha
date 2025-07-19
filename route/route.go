@@ -20,20 +20,42 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	// koneksi DB
 	config.ConnectDB()
 
-	// Minimal CORS - only for preflight
+	// CORS configuration for production and development
 	app.Use(func(c *fiber.Ctx) error {
 		origin := c.Get("Origin")
-		allowedOrigin := "https://sakhaclothing.shop"
-		if origin == allowedOrigin {
-			c.Set("Access-Control-Allow-Origin", allowedOrigin)
-			c.Set("Vary", "Origin")
+
+		// Allowed origins
+		allowedOrigins := []string{
+			"https://sakhaclothing.shop",
+			"http://127.0.0.1:5500",
+			"http://localhost:5500",
+			"http://127.0.0.1:3000",
+			"http://localhost:3000",
+			"http://127.0.0.1:8080",
+			"http://localhost:8080",
+			"http://127.0.0.1:5000",
+			"http://localhost:5000",
 		}
+
+		// Check if origin is allowed
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				c.Set("Access-Control-Allow-Origin", allowedOrigin)
+				break
+			}
+		}
+
+		// Set CORS headers for all requests
+		c.Set("Access-Control-Allow-Methods", "POST, GET, PUT, PATCH, DELETE, OPTIONS")
+		c.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		c.Set("Access-Control-Allow-Credentials", "true")
+		c.Set("Vary", "Origin")
+
+		// Handle preflight requests
 		if c.Method() == "OPTIONS" {
-			c.Set("Access-Control-Allow-Methods", "POST, GET, PUT, PATCH, DELETE, OPTIONS")
-			c.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			c.Set("Access-Control-Allow-Credentials", "true")
 			return c.SendStatus(204)
 		}
+
 		return c.Next()
 	})
 
@@ -54,6 +76,13 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Put("/products/:id", controller.UpdateProduct)
 	app.Delete("/products/:id", controller.DeleteProduct)
 	app.Patch("/products/:id/featured", controller.ToggleFeatured)
+
+	// Newsletter routes
+	app.Post("/newsletter/subscribe", controller.SubscribeNewsletter)
+	app.Get("/newsletter/unsubscribe", controller.UnsubscribeNewsletter)
+	app.Get("/newsletter/subscribers", controller.GetSubscribers)
+	app.Post("/newsletter/notify/:id", controller.SendNewProductNotification)
+	app.Get("/newsletter/history", controller.GetNotificationHistory)
 
 	// Simple test endpoint
 	app.Post("/test", func(c *fiber.Ctx) error {
@@ -79,4 +108,11 @@ func SetupRoutes(app *fiber.App) {
 	app.Put("/products/:id", controller.UpdateProduct)
 	app.Delete("/products/:id", controller.DeleteProduct)
 	app.Patch("/products/:id/featured", controller.ToggleFeatured)
+
+	// Newsletter routes
+	app.Post("/newsletter/subscribe", controller.SubscribeNewsletter)
+	app.Get("/newsletter/unsubscribe", controller.UnsubscribeNewsletter)
+	app.Get("/newsletter/subscribers", controller.GetSubscribers)
+	app.Post("/newsletter/notify/:id", controller.SendNewProductNotification)
+	app.Get("/newsletter/history", controller.GetNotificationHistory)
 }
