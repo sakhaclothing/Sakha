@@ -46,7 +46,15 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Put("/auth/change-password", controller.ChangePasswordHandler)
 	app.Put("/auth/profile", controller.UpdateProfileHandler)
 	app.Post("/auth/verify-email", controller.AuthHandler)
-	
+
+	// Product routes
+	app.Get("/products", controller.GetProducts)
+	app.Get("/products/:id", controller.GetProduct)
+	app.Post("/products", controller.CreateProduct)
+	app.Put("/products/:id", controller.UpdateProduct)
+	app.Delete("/products/:id", controller.DeleteProduct)
+	app.Patch("/products/:id/featured", controller.ToggleFeatured)
+
 	// Simple test endpoint
 	app.Post("/test", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
@@ -63,4 +71,12 @@ func SetupRoutes(app *fiber.App) {
 	app.Put("/auth/change-password", controller.ChangePasswordHandler)
 	app.Put("/auth/profile", controller.UpdateProfileHandler)
 	app.Post("/auth/verify-email", controller.AuthHandler)
+
+	// Product routes
+	app.Get("/products", controller.GetProducts)
+	app.Get("/products/:id", controller.GetProduct)
+	app.Post("/products", controller.CreateProduct)
+	app.Put("/products/:id", controller.UpdateProduct)
+	app.Delete("/products/:id", controller.DeleteProduct)
+	app.Patch("/products/:id/featured", controller.ToggleFeatured)
 }
