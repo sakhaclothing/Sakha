@@ -258,6 +258,14 @@ func UpdateProduct(c *fiber.Ctx) error {
 		})
 	}
 
+	// Send notification if product becomes featured and active
+	if updatedProduct.IsFeatured && updatedProduct.IsActive && !existingProduct.IsFeatured {
+		go utils.SendNewProductNotificationToSubscribers(updatedProduct)
+	}
+
+	// Send notification for significant product updates
+	go utils.SendProductUpdatedNotificationToSubscribers(updatedProduct, existingProduct)
+
 	return c.JSON(fiber.Map{
 		"status":  "success",
 		"data":    updatedProduct,
@@ -305,6 +313,9 @@ func DeleteProduct(c *fiber.Ctx) error {
 			"error":   err.Error(),
 		})
 	}
+
+	// Send notification to newsletter subscribers about product deletion
+	go utils.SendProductDeletedNotificationToSubscribers(product)
 
 	return c.JSON(fiber.Map{
 		"status":  "success",
@@ -373,9 +384,14 @@ func ToggleFeatured(c *fiber.Ctx) error {
 		})
 	}
 
+	// Send notification if product becomes featured and is active
+	if newFeaturedStatus && updatedProduct.IsActive {
+		go utils.SendNewProductNotificationToSubscribers(updatedProduct)
+	}
+
 	return c.JSON(fiber.Map{
 		"status":  "success",
 		"data":    updatedProduct,
 		"message": "Featured status updated successfully",
-	})
+	})	
 }
