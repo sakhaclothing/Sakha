@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+
 	"github.com/sakhaclothing/config"
 	"github.com/sakhaclothing/route"
 
@@ -9,9 +10,14 @@ import (
 )
 
 func main() {
-	app := fiber.New()
+	// Muat .env lebih awal
+	config.SetEnv()
 
+	// Koneksi ke database
 	config.ConnectDB()
+
+	// Inisialisasi Fiber dan routes
+	app := fiber.New()
 	route.SetupRoutes(app)
 
 	log.Println("Server berjalan di :8080")
