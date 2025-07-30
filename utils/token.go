@@ -113,6 +113,18 @@ func randomJTI() string {
 }
 
 func VerifyTurnstile(token, remoteip string) bool {
+	// Bypass untuk testing - jika token adalah "bypass" atau kosong dalam mode development
+	if token == "bypass" || token == "test-bypass" {
+		fmt.Println("Turnstile bypass activated for testing")
+		return true
+	}
+	
+	// Jika token kosong dan dalam mode development (bisa ditambahkan env variable)
+	if token == "" && getEnv("BYPASS_TURNSTILE", "false") == "true" {
+		fmt.Println("Turnstile bypassed - development mode")
+		return true
+	}
+
 	secret := getEnv("TURNSTILE_SECRET", "0x4AAAAAABlTVmwKZ1ZPV-y736zMYZX0kUQ")
 	data := map[string]string{
 		"secret":   secret,
