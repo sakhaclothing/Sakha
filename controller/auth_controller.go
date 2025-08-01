@@ -483,6 +483,61 @@ func AuthHandler(c *fiber.Ctx) error {
 
 		return c.JSON(fiber.Map{"message": "Email berhasil diverifikasi"})
 
+	case "resend-otp":
+		var input struct {
+			Email string `json:"email"`
+		}
+		if err := c.BodyParser(&input); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Data tidak valid"})
+		}
+		if input.Email == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "Email wajib diisi"})
+		}
+
+		// Cek apakah user dengan email tersebut ada
+		var user model.User
+		err := config.DB.Collection("users").FindOne(context.Background(), bson.M{
+			"email": input.Email,
+		}).Decode(&user)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				return c.Status(404).JSON(fiber.Map{"error": "Email tidak terdaftar"})
+			}
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mencari user"})
+		}
+
+		// Generate OTP baru
+		otp, err := utils.GenerateOTP()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal generate OTP"})
+		}
+		expiresAt := time.Now().Add(10 * time.Minute)
+		verification := model.EmailVerification{
+			Email:     input.Email,
+			OTP:       otp,
+			ExpiresAt: expiresAt,
+			Used:      false,
+			CreatedAt: time.Now(),
+		}
+		_, err = config.DB.Collection("email_verifications").InsertOne(context.Background(), verification)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal simpan OTP"})
+		}
+
+		// Kirim OTP ke email user
+		subject := "Verifikasi Email - Sakha Clothing"
+		body := "<p>Kode OTP verifikasi email Anda: <b>" + otp + "</b></p><p>Kode berlaku 10 menit.</p>"
+		smtpConfig, smtpErr := config.GetSMTPConfig()
+		if smtpErr != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mengambil konfigurasi SMTP"})
+		}
+		err = utils.SendSMTPEmail(smtpConfig, input.Email, subject, body)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Gagal mengirim email OTP"})
+		}
+
+		return c.JSON(fiber.Map{"message": "OTP baru telah dikirim ke email Anda"})
+
 	case "update-role":
 		// Ambil token dari header Authorization
 		authHeader := c.Get("Authorization")

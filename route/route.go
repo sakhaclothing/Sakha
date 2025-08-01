@@ -68,6 +68,7 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Put("/auth/change-password", controller.ChangePasswordHandler)
 	app.Put("/auth/profile", controller.UpdateProfileHandler)
 	app.Post("/auth/verify-email", controller.AuthHandler)
+	app.Post("/auth/resend-otp", controller.AuthHandler)
 
 	// Product routes
 	app.Get("/products", controller.GetProducts)
