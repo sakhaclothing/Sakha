@@ -908,3 +908,48 @@ func UpdateProfileHandler(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"message": "Profil berhasil diperbarui!"})
 }
+
+// GetProfileHandler untuk mengambil data profile user
+func GetProfileHandler(c *fiber.Ctx) error {
+	// Ambil token dari header Authorization
+	authHeader := c.Get("Authorization")
+	if authHeader == "" {
+		return c.Status(401).JSON(fiber.Map{"error": "Token tidak ditemukan"})
+	}
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	_, claims, err := utils.ValidateToken(tokenStr)
+	if err != nil {
+		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid"})
+	}
+	userID, ok := claims["user_id"].(string)
+	if !ok || userID == "" {
+		return c.Status(401).JSON(fiber.Map{"error": "Token tidak valid - user_id tidak ditemukan"})
+	}
+
+	// Convert userId string ke ObjectID
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "User ID tidak valid"})
+	}
+
+	// Cari user di database berdasarkan _id
+	var user model.User
+	err = config.DB.Collection("users").FindOne(context.Background(), bson.M{
+		"_id": objID,
+	}).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(404).JSON(fiber.Map{"error": "User tidak ditemukan"})
+		}
+		return c.Status(500).JSON(fiber.Map{"error": "Gagal mencari user"})
+	}
+
+	// Return data user (tanpa password)
+	return c.JSON(fiber.Map{
+		"id":       user.ID.Hex(), // kirim sebagai string
+		"username": user.Username,
+		"email":    user.Email,
+		"fullname": user.Fullname,
+		"role":     user.Role,
+	})
+}

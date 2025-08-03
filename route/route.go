@@ -1,12 +1,15 @@
 package route
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sakhaclothing/config"
 	"github.com/sakhaclothing/controller"
+	"github.com/sakhaclothing/model"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func URL(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +65,7 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	// routes
 	app.Post("/auth/google-login", controller.GoogleLoginHandler)
 	app.Post("/auth/:action", controller.AuthHandler)
+	app.Get("/auth/profile", controller.GetProfileHandler) // Add GET route for profile
 	app.Post("/tracker", controller.TrackerHandler)
 	app.Get("/tracker/count", controller.TrackerCountHandler)
 	app.Get("/config/google-client-id", controller.GetGoogleClientID)
@@ -89,6 +93,17 @@ func URL(w http.ResponseWriter, r *http.Request) {
 	app.Post("/test", func(c *fiber.Ctx) error {
 		return c.SendString("OK")
 	})
+
+	// Test endpoint for Google Client ID
+	app.Get("/test-google-client", func(c *fiber.Ctx) error {
+		var conf model.Config
+		err := config.DB.Collection("config").FindOne(context.Background(), bson.M{"key": "google_client_id"}).Decode(&conf)
+		if err != nil {
+			return c.JSON(fiber.Map{"error": "Google Client ID not found", "details": err.Error()})
+		}
+		return c.JSON(fiber.Map{"client_id": conf.Value, "found": true})
+	})
+
 	adaptor.FiberApp(app).ServeHTTP(w, r)
 }
 
