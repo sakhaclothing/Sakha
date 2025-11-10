@@ -1,42 +1,52 @@
 name: Google Cloud Function Deployment
+
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
+
+env:
+  PROJECT_ID: bagasip
+  REGION: asia-southeast2
+  FUNCTION_NAME: sakha
+  ENTRY_POINT: sakha
+  RUNTIME: go122
+  RUNTIME_SA: renzip@bagasip.iam.gserviceaccount.com   # <<< pakai SA ini sebagai runtime
+
 jobs:
-    Deploy:
-      name: Deploy
-      runs-on: ubuntu-latest
-      steps:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: GCP Authentication
-        id: 'auth'
-        uses: 'google-github-actions/auth@v2'
+
+      - name: Auth to GCP with SA key
+        uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
-      - name: Debug GCP credentials
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set project
+        run: gcloud config set project $PROJECT_ID
+        
+      - name: Deploy Gen2 Cloud Function
         run: |
-          echo "$GOOGLE_APPLICATION_CREDENTIALS" > credentials.json
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2'
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
-      - name: 'Deploy a gen 2 cloud function'
-        run: |
-          gcloud functions deploy sakha \
-            --region=asia-southeast2 \
-            --allow-unauthenticated \
-            --entry-point=sakha \
+          gcloud functions deploy "$FUNCTION_NAME" \
+            --project "$PROJECT_ID" \
+            --region "$REGION" \
             --gen2 \
-            --runtime=go122 \
+            --runtime "$RUNTIME" \
+            --entry-point "$ENTRY_POINT" \
             --trigger-http \
-            --timeout=540s \
+            --allow-unauthenticated \
+            --timeout 540s \
+            --service-account "$RUNTIME_SA" \
             --set-env-vars "MONGOSTRING=${{ secrets.MONGOSTRING }},JWT_SECRET=${{ secrets.JWT_SECRET }}"
-      - name: 'Cek eksistensi fungsi'
-        run: 'gcloud functions describe sakha --region=asia-southeast2'
-      - name: 'Cek log debugging'
-        run: 'gcloud functions logs read sakha --region=asia-southeast2'
+
+      - name: Describe function
+        run: gcloud functions describe "$FUNCTION_NAME" --region "$REGION"
+
+      - name: Tail logs
+        run: gcloud functions logs read "$FUNCTION_NAME" --region "$REGION" --limit=100
