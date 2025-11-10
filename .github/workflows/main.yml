@@ -42,7 +42,7 @@ jobs:
             --trigger-http \
             --allow-unauthenticated \
             --timeout 540s \
-            --service-account renzip@bagasip.iam.gserviceaccount.com \
+            --service-account=renzip@bagasip.iam.gserviceaccount.com \
             --set-env-vars "MONGOSTRING=${{ secrets.MONGOSTRING }},JWT_SECRET=${{ secrets.JWT_SECRET }}"
 
       - name: Describe function
