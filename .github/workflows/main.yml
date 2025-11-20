@@ -34,7 +34,7 @@ jobs:
             --runtime=go122 \
             --gen2 \
             --source=. \
-            --entry-point=WebHook \
+            --entry-point= sakha\
             --trigger-http \
             --allow-unauthenticated \
             --timeout=540s \
