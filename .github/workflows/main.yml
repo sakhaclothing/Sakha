@@ -1,42 +1,46 @@
 name: Google Cloud Function Deployment
+
 on:
   push:
     branches:
       - main
+
 jobs:
-    Deploy:
-      name: Deploy
-      runs-on: ubuntu-latest
-      steps:
+  deploy:
+    name: Deploy to Cloud Functions
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: GCP Authentication
-        id: 'auth'
-        uses: 'google-github-actions/auth@v2'
+
+      # 1. Auth ke GCP
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
-      - name: Debug GCP credentials
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-        run: |
-          echo "$GOOGLE_APPLICATION_CREDENTIALS" > credentials.json
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2'
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
-      - name: 'Deploy a gen 2 cloud function'
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      # 2. Setup gcloud
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      # 3. Deploy Cloud Function Gen 2
+      - name: Deploy Cloud Function (Gen 2)
         run: |
           gcloud functions deploy sakha \
             --region=asia-southeast2 \
-            --allow-unauthenticated \
-            --entry-point=WebHook \
-            --gen2 \
             --runtime=go122 \
+            --gen2 \
+            --source=. \
+            --entry-point=WebHook \
             --trigger-http \
+            --allow-unauthenticated \
             --timeout=540s \
-            --set-env-vars "MONGOSTRING=${{ secrets.MONGOSTRING }},JWT_SECRET=${{ secrets.JWT_SECRET }}" \
-            --service-account=renzarn@renzip.iam.gserviceaccount.com
-      - name: 'Cek eksistensi fungsi'
-        run: 'gcloud functions describe sakha --region=asia-southeast2'
-      - name: 'Cek log debugging'
-        run: 'gcloud functions logs read sakha --region=asia-southeast2'
+            --service-account=renz-cloud@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --set-env-vars "MONGOSTRING=${{ secrets.MONGOSTRING }},JWT_SECRET=${{ secrets.JWT_SECRET }}"
+
+      # 4. Optional: Cek apakah function sudah berhasil
+      - name: Check Function Exists
+        run: gcloud functions describe sakha --region=asia-southeast2
